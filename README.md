@@ -99,47 +99,47 @@ generic jailbreak benchmark run against a foundation model you don't control.
 ## How it works
 
 ```
-                         ┌───────────────────────┐
-                         │      Target Agent       │
+                         ┌──────────────────────────┐
+                         │      Target Agent        │
                          │  (LangChain / native     │
                          │   function-calling)      │
-                         └───────────┬───────────┘
+                         └───────────┬──────────────┘
                                      │
                                      ▼
-                         ┌───────────────────────┐
+                         ┌──────────────────────────┐
                          │   Tool-Graph Discovery   │
                          │   (static analysis of    │
                          │   tools, params, side    │
                          │   effects, permissions)  │
-                         └───────────┬───────────┘
+                         └───────────┬──────────────┘
                                      │
                                      ▼
-                         ┌───────────────────────┐
+                         ┌───────────────────────────┐
                          │  Attack Generation Engine │
                          │  (tree-search over        │
                          │   attack strategies,      │
                          │   graph-aware templating) │
-                         └───────────┬───────────┘
+                         └───────────┬───────────────┘
                                      │
                                      ▼
-                         ┌───────────────────────┐
+                         ┌───────────────────────────┐
                          │  Live Execution Against   │
                          │       Target Agent        │
-                         └───────────┬───────────┘
+                         └───────────┬───────────────┘
                                      │
                                      ▼
-                         ┌───────────────────────┐
-                         │  Scoring & Deduplication │
+                         ┌────────────────────────────┐
+                         │  Scoring & Deduplication   │
                          │  (severity, reproducibility│
-                         │   confidence, impact)     │
-                         └───────────┬───────────┘
+                         │   confidence, impact)      │
+                         └───────────┬────────────────┘
                                      │
                                      ▼
-                         ┌───────────────────────┐
+                         ┌───────────────────────────┐
                          │   Vulnerability Report    │
                          │  (findings + repro steps  │
                          │   + remediation)          │
-                         └───────────────────────┘
+                         └───────────────────────────┘
 ```
 
 ### Exploit taxonomy (v0)
