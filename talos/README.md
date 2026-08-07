@@ -17,6 +17,7 @@
 [Live demo flow](#live-demo-flow) ·
 [Quick start](#quick-start) ·
 [Dashboard](#web-dashboard) ·
+[Monitoring](#continuous-monitoring) ·
 [Architecture](#architecture) ·
 [Exploit classes](#exploit-classes) ·
 [Testing](#testing)
@@ -85,6 +86,11 @@ Given a target agent endpoint and an adapter, Talos:
    - Scores severity from observable impact.
    - Produces exact repro steps and evidence.
 
+6. **Monitors agents continuously**
+   - Re-runs full scans on a timer.
+   - Stores run history and the latest report in the dashboard.
+   - Makes drift visible when a target starts behaving differently over time.
+
 ---
 
 ## Why this demos well
@@ -94,6 +100,7 @@ Talos is built for a live security demo, not just a static report:
 - **CLI mode** for a fast operator workflow
 - **Web dashboard** for a hackathon-friendly visual experience
 - **Visible progress** as tools are discovered, attacks run, and findings land
+- **Continuous monitoring** for recurring scans and history, not just a one-shot run
 - **Deterministic sample agents** so the demo is reproducible every time
 - **Concrete outputs** with evidence, not vague "the model seemed unsafe"
 
@@ -145,6 +152,17 @@ This starts a local FastAPI server and opens a dashboard where you can:
 
 This dashboard reuses the **same scan engine** as the CLI. It is additive, not
 a rewrite.
+
+### Option C: Continuous monitoring demo
+
+Start the dashboard, point it at a target, and use the **Continuous monitoring**
+panel to:
+
+- set a scan interval,
+- optionally cap the number of runs,
+- start recurring full scans,
+- watch monitoring history accumulate over time,
+- inspect the latest findings from the most recent run.
 
 ---
 
@@ -251,6 +269,42 @@ The page includes:
 update while the scan is running.
 
 That makes the demo feel alive instead of blocking behind a spinner.
+
+The dashboard also exposes monitoring APIs for recurring scans:
+
+- `POST /api/monitors`
+- `GET /api/monitors`
+- `GET /api/monitors/{monitor_id}`
+- `POST /api/monitors/{monitor_id}/stop`
+
+These endpoints keep in-memory run history for the local dashboard session.
+
+---
+
+## Continuous monitoring
+
+Phase 2 adds a lightweight recurring monitoring mode aimed at demo and local
+ops workflows.
+
+What it does today:
+
+- re-runs the **full** Talos scan on a timer,
+- stores a history of recent runs,
+- keeps the latest structured report ready for the dashboard,
+- supports stopping a monitor cleanly,
+- works with both `template` and `adaptive` attack strategies.
+
+What it is good for:
+
+- catching obvious regressions after agent changes,
+- showing security drift in a live demo,
+- turning Talos from a one-time scanner into an early continuous-assurance loop.
+
+Current scope:
+
+- monitor state is stored **in memory** inside the dashboard process,
+- this is designed for local/demo use right now,
+- there is no long-term persistence, alert delivery, or distributed worker system yet.
 
 ---
 
@@ -440,6 +494,14 @@ Best for:
 - front-end visualization,
 - future automation and pipelines.
 
+### 3. Monitoring history in the dashboard
+
+Best for:
+
+- recurring local scans,
+- quick regression checks,
+- demoing that Talos can watch a target over time instead of only testing once.
+
 ---
 
 ## Known simplifications
@@ -453,6 +515,10 @@ This version is intentionally focused and honest about its boundaries:
   The current implementation supports deterministic refinement and optional
   Anthropic-backed mutation, but it does not yet include long-horizon search,
   cross-engagement learning, or reinforcement updates.
+
+- **Continuous monitoring is currently in-memory.**
+  Monitor history lives inside the local dashboard server process and is not yet
+  persisted to a database or external event system.
 
 - **Scoring uses known test-environment ground truth.**
   It reasons from observable traces plus known order totals / allowed domains.
@@ -478,6 +544,7 @@ The tests spin up real sample-agent subprocesses and validate:
 - adaptive generation behavior,
 - dashboard HTML serving,
 - dashboard scan streaming,
+- monitoring lifecycle and run history,
 - end-to-end findings behavior.
 
 ---

@@ -15,6 +15,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
+from talos.monitoring import MonitorConfig, MonitorSnapshot, MonitoringManager
 from talos.scan_service import (
     ADAPTERS,
     DEFAULT_ATTACKER_EMAIL,
@@ -26,6 +27,7 @@ from talos.scan_service import (
 )
 
 app = FastAPI(title="Talos Dashboard")
+monitoring_manager = MonitoringManager()
 
 
 class ScanRequest(BaseModel):
@@ -37,6 +39,11 @@ class ScanRequest(BaseModel):
     repro_runs: int = 3
     strategy: str = DEFAULT_GENERATION_STRATEGY
     attack_model: str = "claude-sonnet-4-5"
+
+
+class MonitorRequest(ScanRequest):
+    interval_seconds: float = 60.0
+    max_runs: int | None = None
 
 
 def _dashboard_html() -> str:
@@ -193,6 +200,48 @@ def _dashboard_html() -> str:
       display: flex;
       flex-direction: column;
       gap: 12px;
+    }}
+    .monitor-actions {{
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+    }}
+    .monitor-actions button {{
+      width: auto;
+    }}
+    .button-secondary {{
+      background: #ffffff;
+      color: var(--text);
+      border-color: var(--border);
+    }}
+    .history-list {{
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 14px;
+    }}
+    .history-card {{
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #fafafa;
+      padding: 14px;
+    }}
+    .history-card h3 {{
+      margin: 0 0 6px;
+      font-size: 1rem;
+    }}
+    .history-meta {{
+      color: var(--muted);
+      font-size: 0.9rem;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }}
+    .monitor-empty {{
+      color: var(--muted);
+      margin: 0;
     }}
     .finding {{
       border: 1px solid var(--border);
@@ -358,6 +407,31 @@ def _dashboard_html() -> str:
       <p id="findings-empty" class="findings-empty">No findings yet. Run a scan to populate this list.</p>
       <div id="findings" class="findings hidden"></div>
     </section>
+
+    <section class="panel">
+      <h2 style="margin: 0 0 14px;">Continuous monitoring</h2>
+      <p class="subtitle" style="margin: 0 0 16px;">Re-run full scans on a timer and keep a live history of results.</p>
+      <div class="advanced" style="margin-top: 0;">
+        <div class="field">
+          <label for="monitor_interval_seconds">Interval (seconds)</label>
+          <input id="monitor_interval_seconds" name="monitor_interval_seconds" type="number" min="1" step="1" value="30">
+        </div>
+        <div class="field">
+          <label for="monitor_max_runs">Max runs (optional)</label>
+          <input id="monitor_max_runs" name="monitor_max_runs" type="number" min="1" step="1" placeholder="Leave blank for continuous">
+        </div>
+      </div>
+      <div class="monitor-actions">
+        <button id="start-monitor-button" type="button">Start monitoring</button>
+        <button id="stop-monitor-button" type="button" class="button-secondary" disabled>Stop monitoring</button>
+      </div>
+      <div style="margin-top: 16px;">
+        <div id="monitor-status-text" class="status-text">No active monitor.</div>
+        <div id="monitor-status-subtext" class="status-subtext">Start a recurring scan to track the target over time.</div>
+      </div>
+      <div id="monitor-history-empty" class="monitor-empty" style="margin-top: 16px;">No monitoring history yet.</div>
+      <div id="monitor-history" class="history-list hidden"></div>
+    </section>
   </div>
 
   <script>
@@ -371,6 +445,14 @@ def _dashboard_html() -> str:
     const highCount = document.getElementById("high-count");
     const findingsContainer = document.getElementById("findings");
     const findingsEmpty = document.getElementById("findings-empty");
+    const startMonitorButton = document.getElementById("start-monitor-button");
+    const stopMonitorButton = document.getElementById("stop-monitor-button");
+    const monitorStatusText = document.getElementById("monitor-status-text");
+    const monitorStatusSubtext = document.getElementById("monitor-status-subtext");
+    const monitorHistory = document.getElementById("monitor-history");
+    const monitorHistoryEmpty = document.getElementById("monitor-history-empty");
+    let activeMonitorId = null;
+    let monitorPollTimer = null;
 
     function parseList(value) {{
       return value.split(",").map((item) => item.trim()).filter(Boolean);
@@ -395,6 +477,18 @@ def _dashboard_html() -> str:
 
     function badgeClass(severity) {{
       return `badge badge-${{severity || "low"}}`;
+    }}
+
+    function collectScanPayload() {{
+      return {{
+        target: document.getElementById("target").value.trim(),
+        adapter: document.getElementById("adapter").value,
+        attacker_email: document.getElementById("attacker_email").value.trim(),
+        seed_order_ids: parseList(document.getElementById("seed_order_ids").value),
+        poisoned_order_ids: parseList(document.getElementById("poisoned_order_ids").value),
+        strategy: document.getElementById("strategy").value,
+        attack_model: document.getElementById("attack_model").value.trim()
+      }};
     }}
 
     function renderFindings(report) {{
@@ -463,15 +557,7 @@ def _dashboard_html() -> str:
       statusText.textContent = "Starting scan...";
       statusSubtext.textContent = "Connecting to target.";
 
-      const payload = {{
-        target: document.getElementById("target").value.trim(),
-        adapter: document.getElementById("adapter").value,
-        attacker_email: document.getElementById("attacker_email").value.trim(),
-        seed_order_ids: parseList(document.getElementById("seed_order_ids").value),
-        poisoned_order_ids: parseList(document.getElementById("poisoned_order_ids").value),
-        strategy: document.getElementById("strategy").value,
-        attack_model: document.getElementById("attack_model").value.trim()
-      }};
+      const payload = collectScanPayload();
 
       try {{
         const response = await fetch("/api/scans", {{
@@ -520,7 +606,139 @@ def _dashboard_html() -> str:
       }}
     }}
 
+    function renderMonitorHistory(snapshot) {{
+      const history = snapshot?.history || [];
+      if (!history.length) {{
+        monitorHistory.innerHTML = "";
+        monitorHistory.classList.add("hidden");
+        monitorHistoryEmpty.classList.remove("hidden");
+        return;
+      }}
+
+      monitorHistoryEmpty.classList.add("hidden");
+      monitorHistory.classList.remove("hidden");
+      monitorHistory.innerHTML = history.map((run, index) => {{
+        const report = run.report;
+        const counts = report?.stats?.severity_counts || {{ critical: 0, high: 0 }};
+        const findingsCount = report?.findings?.length || 0;
+        return `
+          <div class="history-card">
+            <h3>Run #${{snapshot.run_count - index}}</h3>
+            <div class="history-meta">
+              <span>Status: <strong>${{escapeHtml(run.status)}}</strong></span>
+              <span>Started: <strong>${{new Date(run.started_at * 1000).toLocaleTimeString()}}</strong></span>
+              <span>Duration: <strong>${{run.duration_seconds ?? "..."}}s</strong></span>
+            </div>
+            <div class="history-meta">
+              <span>Findings: <strong>${{findingsCount}}</strong></span>
+              <span>Critical: <strong>${{counts.critical ?? 0}}</strong></span>
+              <span>High: <strong>${{counts.high ?? 0}}</strong></span>
+            </div>
+            <div class="status-subtext">${{escapeHtml(run.error || run.message)}}</div>
+          </div>
+        `;
+      }}).join("");
+    }}
+
+    function updateMonitorUI(snapshot) {{
+      if (!snapshot) return;
+      activeMonitorId = snapshot.active ? snapshot.monitor_id : activeMonitorId === snapshot.monitor_id ? null : activeMonitorId;
+      startMonitorButton.disabled = Boolean(snapshot.active);
+      stopMonitorButton.disabled = !snapshot.active;
+      monitorStatusText.textContent = snapshot.active
+        ? `Monitor running (${{snapshot.status}})`
+        : `Monitor ${{snapshot.status}}`;
+      const nextRunText = snapshot.next_run_at
+        ? `Next run at ${{new Date(snapshot.next_run_at * 1000).toLocaleTimeString()}}.`
+        : "No further runs scheduled.";
+      monitorStatusSubtext.textContent = `${{snapshot.config.target}} via ${{snapshot.config.adapter}}. Completed runs: ${{snapshot.run_count}}. ${{nextRunText}}`;
+      renderMonitorHistory(snapshot);
+      if (snapshot.latest_report) {{
+        setStats({{
+          tools_found: snapshot.latest_report.stats.tools_found,
+          attacks_run: snapshot.latest_report.stats.attack_templates_run,
+          attacks_total: snapshot.latest_report.stats.attack_templates_run,
+          critical: snapshot.latest_report.stats.severity_counts.critical,
+          high: snapshot.latest_report.stats.severity_counts.high
+        }});
+        renderFindings(snapshot.latest_report);
+      }}
+    }}
+
+    async function pollMonitor() {{
+      if (!activeMonitorId) return;
+      try {{
+        const response = await fetch(`/api/monitors/${{activeMonitorId}}`);
+        if (!response.ok) throw new Error(`Monitor fetch failed with status ${{response.status}}`);
+        const snapshot = await response.json();
+        updateMonitorUI(snapshot);
+        if (!snapshot.active && monitorPollTimer) {{
+          clearInterval(monitorPollTimer);
+          monitorPollTimer = null;
+        }}
+      }} catch (error) {{
+        monitorStatusText.textContent = "Monitor refresh failed.";
+        monitorStatusSubtext.textContent = error.message;
+      }}
+    }}
+
+    async function startMonitor() {{
+      startMonitorButton.disabled = true;
+      const payload = {{
+        ...collectScanPayload(),
+        interval_seconds: Number(document.getElementById("monitor_interval_seconds").value || 30),
+        max_runs: document.getElementById("monitor_max_runs").value
+          ? Number(document.getElementById("monitor_max_runs").value)
+          : null
+      }};
+
+      try {{
+        const response = await fetch("/api/monitors", {{
+          method: "POST",
+          headers: {{ "Content-Type": "application/json" }},
+          body: JSON.stringify(payload)
+        }});
+        if (!response.ok) {{
+          throw new Error(`Monitor request failed with status ${{response.status}}`);
+        }}
+        const snapshot = await response.json();
+        activeMonitorId = snapshot.monitor_id;
+        updateMonitorUI(snapshot);
+        if (monitorPollTimer) clearInterval(monitorPollTimer);
+        monitorPollTimer = setInterval(pollMonitor, 2000);
+        await pollMonitor();
+      }} catch (error) {{
+        monitorStatusText.textContent = "Failed to start monitor.";
+        monitorStatusSubtext.textContent = error.message;
+        startMonitorButton.disabled = false;
+      }}
+    }}
+
+    async function stopMonitor() {{
+      if (!activeMonitorId) return;
+      stopMonitorButton.disabled = true;
+      try {{
+        const response = await fetch(`/api/monitors/${{activeMonitorId}}/stop`, {{ method: "POST" }});
+        if (!response.ok) {{
+          throw new Error(`Stop request failed with status ${{response.status}}`);
+        }}
+        const snapshot = await response.json();
+        updateMonitorUI(snapshot);
+        if (monitorPollTimer) {{
+          clearInterval(monitorPollTimer);
+          monitorPollTimer = null;
+        }}
+        activeMonitorId = null;
+        startMonitorButton.disabled = false;
+      }} catch (error) {{
+        monitorStatusText.textContent = "Failed to stop monitor.";
+        monitorStatusSubtext.textContent = error.message;
+      }}
+    }}
+
     form.addEventListener("submit", runScan);
+    startMonitorButton.addEventListener("click", startMonitor);
+    stopMonitorButton.addEventListener("click", stopMonitor);
   </script>
 </body>
 </html>"""
@@ -565,6 +783,52 @@ def run_scan(request: ScanRequest) -> StreamingResponse:
             yield json.dumps(error_event) + "\n"
 
     return StreamingResponse(stream(), media_type="application/x-ndjson")
+
+
+@app.get("/api/monitors")
+def list_monitors() -> list[MonitorSnapshot]:
+    return monitoring_manager.list_monitors()
+
+
+@app.post("/api/monitors")
+def create_monitor(request: MonitorRequest) -> MonitorSnapshot:
+    if request.adapter not in ADAPTERS:
+        raise HTTPException(status_code=422, detail=f"Unknown adapter '{request.adapter}'. Choices: {list(ADAPTERS)}")
+    if request.strategy not in GENERATION_STRATEGIES:
+        raise HTTPException(status_code=422, detail=f"Unknown strategy '{request.strategy}'. Choices: {list(GENERATION_STRATEGIES)}")
+    try:
+        return monitoring_manager.create_monitor(
+            MonitorConfig(
+                target=request.target,
+                adapter=request.adapter,
+                attacker_email=request.attacker_email,
+                seed_order_ids=request.seed_order_ids,
+                poisoned_order_ids=request.poisoned_order_ids,
+                repro_runs=request.repro_runs,
+                strategy=request.strategy,
+                attack_model=request.attack_model,
+                interval_seconds=request.interval_seconds,
+                max_runs=request.max_runs,
+            )
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@app.get("/api/monitors/{monitor_id}")
+def get_monitor(monitor_id: str) -> MonitorSnapshot:
+    try:
+        return monitoring_manager.get_monitor(monitor_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=f"No such monitor: {monitor_id}") from exc
+
+
+@app.post("/api/monitors/{monitor_id}/stop")
+def stop_monitor(monitor_id: str) -> MonitorSnapshot:
+    try:
+        return monitoring_manager.stop_monitor(monitor_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=f"No such monitor: {monitor_id}") from exc
 
 
 def _wait_and_open(url: str, ready_url: str) -> None:
