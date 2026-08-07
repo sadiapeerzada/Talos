@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/talos-logo.svg" alt="Talos logo" width="140"/>
+<img src="talos_logo.png" alt="Talos logo" width="140"/>
 
 # Talos (Τάλως)
 
@@ -22,19 +22,51 @@
 
 ### [🡒 Try Talos live: talos-red-team.vercel.app](https://talos-red-team.vercel.app)
 
-[The Myth](#the-myth-and-the-thesis) · [Why Talos](#why-talos) · [Architecture](#architecture) · [What It Does](#what-talos-does) · [Live Demo](#live-demo-flow) · [Quick Start](#quick-start) · [Before/After](#before--after-proving-talos-validates-a-fix-not-just-a-break) · [Roadmap](#roadmap) · [Judges' Checklist](#for-the-judges-what-to-look-at-in-5-minutes)
+[The Myth](#the-myth-and-the-thesis) · [Why Talos](#why-talos) · [Architecture](#architecture) · [What It Does](#what-talos-does) · [Live Demo](#live-demo-flow) · [Quick Start](#quick-start) · [Before/After](#before--after-proving-talos-validates-a-fix-not-just-a-break) · [Roadmap](#roadmap) · [Judges' Checklist](#for-the-judges-what-to-look-at-in-5-minutes) · [Full TOC ↓](#-table-of-contents)
 
 </div>
 
 <br/>
 
-> **Note on images in this README:** all diagrams live in `/assets` on the `main` branch. If you're viewing this file somewhere that doesn't resolve relative paths (npm registry, some IDE previews), swap the relative `assets/...` paths below for the raw GitHub URL pattern:
-> `https://raw.githubusercontent.com/<your-org>/talos/main/assets/<file>.svg`
+> **Note on images in this README:** all diagrams and the logo are uploaded directly to repo `root` on the `main` branch (no `assets/` subfolder). If you're viewing this file somewhere that doesn't resolve relative paths (npm registry, some IDE previews), swap the relative paths below for the raw GitHub URL pattern:
+> `https://raw.githubusercontent.com/<your-org>/talos/main/<file>`
+
+<br/>
+
+## 📑 Table of Contents
+
+- [The Myth, and the Thesis](#the-myth-and-the-thesis)
+- [Why Talos](#why-talos)
+- [What Talos Does](#what-talos-does)
+- [Architecture](#architecture)
+- [Exploit Taxonomy](#exploit-taxonomy)
+- [Capability Matrix](#capability-matrix)
+- [Live Demo Flow](#live-demo-flow)
+- [Try It Live](#try-it-live)
+- [Scope Note](#scope-note)
+- [Quick Start](#quick-start)
+- [Web Dashboard](#web-dashboard)
+- [A Real, Non-Fixture Target](#a-real-non-fixture-target-the-groq-backed-agent)
+- [Before / After](#before--after-proving-talos-validates-a-fix-not-just-a-break)
+- [Continuous Monitoring](#continuous-monitoring)
+- [Cross-Engagement Learning](#cross-engagement-learning)
+- [CLI Reference](#cli-reference)
+- [Why the Two Sample Agents Matter](#why-the-two-sample-agents-matter)
+- [What a Strong Finding Looks Like](#what-a-strong-finding-looks-like)
+- [Testing](#testing)
+- [Known Simplifications](#known-simplifications)
+- [The Moat](#the-moat-why-this-compounds)
+- [Roadmap](#roadmap)
+- [Why Now](#why-now)
+- [Business Model](#business-model)
+- [For the Judges](#for-the-judges-what-to-look-at-in-5-minutes)
+- [Who This Is For](#who-this-is-for)
+- [Company / Status](#company--status)
 
 ---
 
 <p align="center">
-  <img src="assets/architecture-pipeline.svg" alt="Talos end-to-end architecture: target agent, adapter normalization, tool-graph discovery, attack generation, live execution, scoring, reporting, monitoring, and cross-engagement learning" width="100%"/>
+  <img src="architecture-pipeline.svg" alt="Talos end-to-end architecture: target agent, adapter normalization, tool-graph discovery, attack generation, live execution, scoring, reporting, monitoring, and cross-engagement learning" width="100%"/>
 </p>
 <p align="center"><sub><b>Figure 1.</b> The full Talos pipeline — discover → attack → prove → monitor → learn — end to end.</sub></p>
 
@@ -154,7 +186,7 @@ tests/                  End-to-end and parity tests
 ## Exploit taxonomy
 
 <p align="center">
-  <img src="assets/exploit-taxonomy.svg" alt="Talos exploit taxonomy: 7 classes, 35 templates" width="100%"/>
+  <img src="exploit-taxonomy.svg" alt="Talos exploit taxonomy: 7 classes, 35 templates" width="100%"/>
 </p>
 <p align="center"><sub><b>Figure 2.</b> The 7 exploit classes Talos tests against, and the 35 templates behind them.</sub></p>
 
@@ -195,7 +227,7 @@ These classes are deliberately centered on **agent-specific failure modes**, not
 ## Live demo flow
 
 <p align="center">
-  <img src="assets/demo-flow.svg" alt="Talos live demo story arc: target URL to tool graph to attack execution to critical finding to monitor and learn" width="100%"/>
+  <img src="demo-flow.svg" alt="Talos live demo story arc: target URL to tool graph to attack execution to critical finding to monitor and learn" width="100%"/>
 </p>
 <p align="center"><sub><b>Figure 3.</b> The 5-step arc judges watch happen live, end to end.</sub></p>
 
@@ -330,7 +362,7 @@ Because this target is backed by a real model instead of a scripted brain, resul
 ## Before / after: proving Talos validates a fix, not just a break
 
 <p align="center">
-  <img src="assets/before-after.svg" alt="Before/after severity comparison between vulnerable and hardened agent" width="100%"/>
+  <img src="before-after.svg" alt="Before/after severity comparison between vulnerable and hardened agent" width="100%"/>
 </p>
 <p align="center"><sub><b>Figure 4.</b> Same model, same tools — findings drop sharply once the hardened policy backstop is added. Illustrative counts; swap in your real scan output before presenting.</sub></p>
 
