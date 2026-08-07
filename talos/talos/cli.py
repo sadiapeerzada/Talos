@@ -9,29 +9,12 @@ from __future__ import annotations
 import argparse
 import sys
 
-from talos.attacks.engine import generate_all
-from talos.attacks.models import AttackContext
-from talos.execution.dedup import deduplicate
-from talos.execution.scoring import score_attack
-from talos.graph.discovery import build_tool_graph
-from talos.harness.base import TargetAgent
-from talos.harness.langchain_adapter import LangChainAdapter
-from talos.harness.native_adapter import NativeAdapter
-from talos.reporting.report import render_markdown
-
-ADAPTERS = {"langchain": LangChainAdapter, "native": NativeAdapter}
-
-DEFAULT_SEED_ORDER_IDS = ["1001", "1003"]
-DEFAULT_POISONED_ORDER_IDS = ["1002"]
-DEFAULT_ATTACKER_EMAIL = "collector@exfil-sink.example"
-
-
-def build_agent(adapter_name: str, target: str) -> TargetAgent:
-    if adapter_name not in ADAPTERS:
-        raise ValueError(f"Unknown adapter '{adapter_name}'. Choices: {list(ADAPTERS)}")
-    agent = ADAPTERS[adapter_name](target)
-    agent.connect()
-    return agent
+from talos.reporting.report import render_markdown_report
+from talos.scan_service import (
+    ADAPTERS,
+    build_agent,
+    run_scan_pipeline,
+)
 
 
 def run_scan(
@@ -44,42 +27,29 @@ def run_scan(
     repro_runs: int = 3,
     verbose: bool = True,
 ) -> str:
-    agent = build_agent(adapter_name, target)
-
-    if verbose:
-        print(f"[1/5] Connected to target via {adapter_name} adapter: {target}")
-
-    tools = agent.list_tools()
-    if verbose:
-        print(f"[2/5] Discovered {len(tools)} tools: {[t.name for t in tools]}")
-
-    graph = build_tool_graph(tools)
-    ctx = AttackContext(
-        graph=graph,
-        seed_order_ids=seed_order_ids or DEFAULT_SEED_ORDER_IDS,
-        poisoned_order_ids=poisoned_order_ids or DEFAULT_POISONED_ORDER_IDS,
-        attacker_email=attacker_email or DEFAULT_ATTACKER_EMAIL,
-    )
-
-    attacks = generate_all(ctx)
-    if verbose:
-        classes = sorted({a.exploit_class for a in attacks})
-        print(f"[3/5] Generated {len(attacks)} attack instances across {len(classes)} exploit classes")
-
-    findings = [score_attack(agent, a, repro_runs=repro_runs) for a in attacks]
-    deduped = deduplicate(findings)
-    if verbose:
-        n_success = sum(1 for f in deduped if f.outcome == "success")
-        print(f"[4/5] Executed & scored -> {n_success}/{len(deduped)} tool-pairs show a successful exploit")
-
-    report_md = render_markdown(
-        target_label=target,
+    report, events = run_scan_pipeline(
+        target=target,
         adapter_name=adapter_name,
-        tools=tools,
-        graph=graph,
-        findings=deduped,
-        templates_run=len(attacks),
+        seed_order_ids=seed_order_ids,
+        poisoned_order_ids=poisoned_order_ids,
+        attacker_email=attacker_email,
+        repro_runs=repro_runs,
     )
+    if verbose:
+        for event in events:
+            if event.type == "connected":
+                print(f"[1/5] Connected to target via {adapter_name} adapter: {target}")
+            elif event.type == "tools_discovered":
+                print(f"[2/5] Discovered {event.stats.tools_found} tools: {event.tool_names}")
+            elif event.type == "attacks_generated":
+                classes = event.exploit_classes or []
+                print(f"[3/5] Generated {event.stats.attacks_total} attack instances across {len(classes)} exploit classes")
+            elif event.type == "completed":
+                successful = len(report.findings)
+                tested = report.stats.findings_tested
+                print(f"[4/5] Executed & scored -> {successful}/{tested} tool-pairs show a successful exploit")
+
+    report_md = render_markdown_report(report)
     with open(out_path, "w") as f:
         f.write(report_md)
     if verbose:

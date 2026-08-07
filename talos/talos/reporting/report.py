@@ -1,16 +1,17 @@
-"""Assembles the final Markdown vulnerability report."""
+"""Assembles structured and Markdown vulnerability reports."""
 
 from __future__ import annotations
 
 import datetime as _dt
 
 import networkx as nx
+from pydantic import BaseModel, Field
 
 from talos.execution.dedup import ExploitClassFinding
 from talos.graph.render import to_mermaid
 from talos.harness.base import ToolSpec
 
-SEVERITY_EMOJI = {"critical": "\U0001F534", "high": "\U0001F7E0", "medium": "\U0001F7E1", "low": "\U0001F7E2", "none": "\u26AA"}
+SEVERITY_EMOJI = {"critical": "🔴", "high": "🟠", "medium": "🟡", "low": "🟢", "none": "⚪"}
 
 REMEDIATIONS = {
     "direct_injection": (
@@ -51,7 +52,80 @@ EXPLOIT_CLASS_LABELS = {
 }
 
 
-def render_markdown(
+class SeverityCounts(BaseModel):
+    critical: int = 0
+    high: int = 0
+    medium: int = 0
+    low: int = 0
+
+
+class ReportStats(BaseModel):
+    tools_found: int
+    attack_templates_run: int
+    exploit_classes_successful: int
+    findings_tested: int
+    severity_counts: SeverityCounts
+
+
+class ReportVariant(BaseModel):
+    template_id: str
+    name: str
+    outcome: str
+    messages: list[str] = Field(default_factory=list)
+    evidence: dict = Field(default_factory=dict)
+
+
+class ReportFinding(BaseModel):
+    exploit_class: str
+    exploit_label: str
+    target_tool: str
+    outcome: str
+    severity: str
+    reproducibility: float
+    title: str
+    summary: str
+    remediation: str
+    variants: list[ReportVariant] = Field(default_factory=list)
+
+
+class ScanReport(BaseModel):
+    target: str
+    adapter: str
+    generated_at: str
+    stats: ReportStats
+    tool_names: list[str] = Field(default_factory=list)
+    tool_graph_mermaid: str
+    findings: list[ReportFinding] = Field(default_factory=list)
+    not_reproduced: list[ReportFinding] = Field(default_factory=list)
+
+
+def _summarize_finding(finding: ExploitClassFinding) -> str:
+    variant = next((candidate for candidate in finding.variants if candidate.outcome == "success"), finding.variants[0])
+    refund = variant.evidence.get("refund_overage")
+    if refund:
+        return (
+            f"Issued ${refund['amount']:.2f} on order {refund['order_id']} "
+            f"(${refund['overage']:.2f} over the real total)."
+        )
+
+    suspicious_email = variant.evidence.get("suspicious_email")
+    if suspicious_email:
+        destination = suspicious_email.get("to", "unknown destination")
+        exposure = suspicious_email.get("data_exposure", 0)
+        if exposure >= 3:
+            return f"Sent bulk customer data to {destination}."
+        if exposure >= 1:
+            return f"Sent customer data to {destination}."
+        return f"Triggered an external email to {destination}."
+
+    unverified = variant.evidence.get("unverified_action")
+    if unverified:
+        return f"Performed {unverified['tool']} without fresh authorization after a prior read step."
+
+    return f"Reached {finding.target_tool} with {finding.reproducibility:.0%} reproducibility."
+
+
+def build_report(
     *,
     target_label: str,
     adapter_name: str,
@@ -59,28 +133,89 @@ def render_markdown(
     graph: nx.DiGraph,
     findings: list[ExploitClassFinding],
     templates_run: int,
-) -> str:
+) -> ScanReport:
     now = _dt.datetime.now(_dt.timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
-    successful = [f for f in findings if f.outcome == "success"]
-    by_sev = {"critical": 0, "high": 0, "medium": 0, "low": 0}
-    for f in successful:
-        by_sev[f.severity.value] = by_sev.get(f.severity.value, 0) + 1
+    successful = [finding for finding in findings if finding.outcome == "success"]
+    severity_counts = SeverityCounts()
+    for finding in successful:
+        if finding.severity.value == "critical":
+            severity_counts.critical += 1
+        elif finding.severity.value == "high":
+            severity_counts.high += 1
+        elif finding.severity.value == "medium":
+            severity_counts.medium += 1
+        elif finding.severity.value == "low":
+            severity_counts.low += 1
+
+    reproduced: list[ReportFinding] = []
+    not_reproduced: list[ReportFinding] = []
+    for finding in findings:
+        label = EXPLOIT_CLASS_LABELS.get(finding.exploit_class, finding.exploit_class)
+        report_finding = ReportFinding(
+            exploit_class=finding.exploit_class,
+            exploit_label=label,
+            target_tool=finding.target_tool,
+            outcome=finding.outcome,
+            severity=finding.severity.value,
+            reproducibility=finding.reproducibility,
+            title=f"{label} -> {finding.target_tool}",
+            summary=_summarize_finding(finding),
+            remediation=REMEDIATIONS.get(finding.exploit_class, ""),
+            variants=[
+                ReportVariant(
+                    template_id=variant.template_id,
+                    name=variant.name,
+                    outcome=variant.outcome,
+                    messages=variant.messages,
+                    evidence=variant.evidence,
+                )
+                for variant in finding.variants
+            ],
+        )
+        if finding.outcome == "success":
+            reproduced.append(report_finding)
+        else:
+            not_reproduced.append(report_finding)
+
+    return ScanReport(
+        target=target_label,
+        adapter=adapter_name,
+        generated_at=now,
+        stats=ReportStats(
+            tools_found=len(tools),
+            attack_templates_run=templates_run,
+            exploit_classes_successful=len(successful),
+            findings_tested=len(findings),
+            severity_counts=severity_counts,
+        ),
+        tool_names=[tool.name for tool in tools],
+        tool_graph_mermaid=to_mermaid(graph),
+        findings=reproduced,
+        not_reproduced=not_reproduced,
+    )
+
+
+def render_markdown_report(report: ScanReport) -> str:
+    all_findings = [*report.findings, *report.not_reproduced]
 
     lines: list[str] = []
     lines.append("# Talos Vulnerability Report")
     lines.append("")
-    lines.append(f"**Target:** `{target_label}`  ")
-    lines.append(f"**Adapter:** {adapter_name}  ")
-    lines.append(f"**Generated:** {now}  ")
-    lines.append(f"**Tools discovered:** {len(tools)}  ")
-    lines.append(f"**Attack templates run:** {templates_run}  ")
-    lines.append(f"**Exploit classes with a successful finding:** {len(successful)} / {len(findings)} tool-pairs tested")
+    lines.append(f"**Target:** `{report.target}`  ")
+    lines.append(f"**Adapter:** {report.adapter}  ")
+    lines.append(f"**Generated:** {report.generated_at}  ")
+    lines.append(f"**Tools discovered:** {report.stats.tools_found}  ")
+    lines.append(f"**Attack templates run:** {report.stats.attack_templates_run}  ")
+    lines.append(
+        f"**Exploit classes with a successful finding:** {report.stats.exploit_classes_successful} / "
+        f"{report.stats.findings_tested} tool-pairs tested"
+    )
     lines.append("")
     lines.append(
-        f"{SEVERITY_EMOJI['critical']} Critical: {by_sev['critical']}   "
-        f"{SEVERITY_EMOJI['high']} High: {by_sev['high']}   "
-        f"{SEVERITY_EMOJI['medium']} Medium: {by_sev['medium']}   "
-        f"{SEVERITY_EMOJI['low']} Low: {by_sev['low']}"
+        f"{SEVERITY_EMOJI['critical']} Critical: {report.stats.severity_counts.critical}   "
+        f"{SEVERITY_EMOJI['high']} High: {report.stats.severity_counts.high}   "
+        f"{SEVERITY_EMOJI['medium']} Medium: {report.stats.severity_counts.medium}   "
+        f"{SEVERITY_EMOJI['low']} Low: {report.stats.severity_counts.low}"
     )
     lines.append("")
 
@@ -94,7 +229,7 @@ def render_markdown(
     )
     lines.append("")
     lines.append("```mermaid")
-    lines.append(to_mermaid(graph))
+    lines.append(report.tool_graph_mermaid)
     lines.append("```")
     lines.append("")
 
@@ -102,59 +237,80 @@ def render_markdown(
     lines.append("")
     lines.append("| Severity | Exploit Class | Target Tool | Outcome | Reproducibility | Variants |")
     lines.append("|---|---|---|---|---|---|")
-    for f in findings:
-        emoji = SEVERITY_EMOJI.get(f.severity.value, "")
-        variant_ids = ", ".join(v.template_id for v in f.variants)
+    for finding in all_findings:
+        emoji = SEVERITY_EMOJI.get(finding.severity, "")
+        variant_ids = ", ".join(variant.template_id for variant in finding.variants)
         lines.append(
-            f"| {emoji} {f.severity.value} | {EXPLOIT_CLASS_LABELS.get(f.exploit_class, f.exploit_class)} "
-            f"| `{f.target_tool}` | {f.outcome} | {f.reproducibility:.0%} | {variant_ids} |"
+            f"| {emoji} {finding.severity} | {finding.exploit_label} "
+            f"| `{finding.target_tool}` | {finding.outcome} | {finding.reproducibility:.0%} | {variant_ids} |"
         )
     lines.append("")
 
     lines.append("## Detailed Findings")
     lines.append("")
-    for f in findings:
-        if f.outcome != "success":
-            continue
-        label = EXPLOIT_CLASS_LABELS.get(f.exploit_class, f.exploit_class)
-        lines.append(f"### {SEVERITY_EMOJI.get(f.severity.value,'')} {label} \u2192 `{f.target_tool}` ({f.severity.value})")
+    for finding in report.findings:
+        lines.append(
+            f"### {SEVERITY_EMOJI.get(finding.severity, '')} {finding.exploit_label} -> "
+            f"`{finding.target_tool}` ({finding.severity})"
+        )
         lines.append("")
-        lines.append(f"**Reproducibility:** {f.reproducibility:.0%} across {len(f.variants)} variant(s) tried.")
+        lines.append(f"**Reproducibility:** {finding.reproducibility:.0%} across {len(finding.variants)} variant(s) tried.")
         lines.append("")
-        for v in f.variants:
-            lines.append(f"<details><summary><code>{v.template_id}</code> -- {v.name} ({v.outcome})</summary>")
+        for variant in finding.variants:
+            lines.append(f"<details><summary><code>{variant.template_id}</code> -- {variant.name} ({variant.outcome})</summary>")
             lines.append("")
             lines.append("**Reproduction steps (exact messages sent, in order):**")
-            for i, msg in enumerate(v.messages, 1):
-                lines.append(f"{i}. `{msg}`")
+            for index, message in enumerate(variant.messages, 1):
+                lines.append(f"{index}. `{message}`")
             lines.append("")
             lines.append("**Evidence:**")
             lines.append("```")
-            for k, val in v.evidence.items():
-                lines.append(f"{k}: {val}")
+            for key, value in variant.evidence.items():
+                lines.append(f"{key}: {value}")
             lines.append("```")
             lines.append("")
             lines.append("</details>")
             lines.append("")
-        lines.append(f"**Remediation:** {REMEDIATIONS.get(f.exploit_class, '')}")
+        lines.append(f"**Remediation:** {finding.remediation}")
         lines.append("")
 
-    failed_or_partial = [f for f in findings if f.outcome != "success"]
-    if failed_or_partial:
+    if report.not_reproduced:
         lines.append("## Not Reproduced")
         lines.append("")
         lines.append("These tool-pairs were tested but did not show a successful exploit in this run:")
         lines.append("")
-        for f in failed_or_partial:
-            variant_ids = ", ".join(v.template_id for v in f.variants)
-            lines.append(f"- {EXPLOIT_CLASS_LABELS.get(f.exploit_class, f.exploit_class)} \u2192 `{f.target_tool}` ({f.outcome}) -- variants: {variant_ids}")
+        for finding in report.not_reproduced:
+            variant_ids = ", ".join(variant.template_id for variant in finding.variants)
+            lines.append(f"- {finding.exploit_label} -> `{finding.target_tool}` ({finding.outcome}) -- variants: {variant_ids}")
         lines.append("")
 
     lines.append("## Remediation Summary")
     lines.append("")
-    for cls, text in REMEDIATIONS.items():
-        if any(f.exploit_class == cls and f.outcome == "success" for f in findings):
-            lines.append(f"- **{EXPLOIT_CLASS_LABELS[cls]}:** {text}")
+    seen_classes = {finding.exploit_class for finding in report.findings}
+    for exploit_class in EXPLOIT_CLASS_LABELS:
+        if exploit_class in seen_classes:
+            lines.append(f"- **{EXPLOIT_CLASS_LABELS[exploit_class]}:** {REMEDIATIONS[exploit_class]}")
     lines.append("")
 
     return "\n".join(lines)
+
+
+def render_markdown(
+    *,
+    target_label: str,
+    adapter_name: str,
+    tools: list[ToolSpec],
+    graph: nx.DiGraph,
+    findings: list[ExploitClassFinding],
+    templates_run: int,
+) -> str:
+    return render_markdown_report(
+        build_report(
+            target_label=target_label,
+            adapter_name=adapter_name,
+            tools=tools,
+            graph=graph,
+            findings=findings,
+            templates_run=templates_run,
+        )
+    )

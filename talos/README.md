@@ -40,6 +40,16 @@ python scan.py --target http://localhost:8001/agent --adapter native
 Each run writes `report_<adapter>.md` (override with `--out`). Sample
 reports generated during development are in `reports/`.
 
+To demo the same scan engine in a browser instead of the terminal:
+
+```bash
+talos-dashboard
+```
+
+That starts a local FastAPI server, opens a single-page dashboard, and
+streams scan progress (tool discovery, attacks executed, findings landing)
+against the target you enter in the form.
+
 ## Architecture
 
 ```
@@ -68,7 +78,9 @@ talos/
     scoring.py             success/partial/fail, severity, reproducibility
     dedup.py               Rolls variants up into exploit-class findings
   reporting/
-    report.py             Markdown report assembly
+    report.py             Structured + Markdown report assembly
+  scan_service.py     Shared scan pipeline for CLI + dashboard
+  dashboard.py        FastAPI dashboard + talos-dashboard entry point
   cli.py              talos-scan entry point
 scan.py               Repo-root wrapper: `python scan.py --target ... --adapter ...`
 tests/                pytest suite (spins up both servers as subprocesses)

@@ -23,6 +23,7 @@ dev = ["pytest>=8.0"]
 
 [project.scripts]
 talos-scan = "talos.cli:main"
+talos-dashboard = "talos.dashboard:main"
 
 [tool.setuptools.packages.find]
 include = ["talos*"]
