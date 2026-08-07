@@ -1,0 +1,65 @@
+<svg viewBox="0 0 900 420" xmlns="http://www.w3.org/2000/svg" font-family="'Segoe UI', Helvetica, Arial, sans-serif">
+  <rect x="0" y="0" width="900" height="420" fill="#ffffff"/>
+  <text x="450" y="34" text-anchor="middle" font-size="20" font-weight="700" fill="#111111">Before / After: Same Model, Hardened Policy Backstop</text>
+  <text x="450" y="54" text-anchor="middle" font-size="12" fill="#666666">Talos scanning the Groq-backed real_agent_server.py, vulnerable vs --hardened</text>
+
+  <!-- axes -->
+  <line x1="90" y1="340" x2="850" y2="340" stroke="#111111" stroke-width="2"/>
+  <line x1="90" y1="90" x2="90" y2="340" stroke="#111111" stroke-width="2"/>
+  <text x="60" y="345" font-size="11" fill="#666666" text-anchor="end">0</text>
+  <text x="60" y="270" font-size="11" fill="#666666" text-anchor="end">2</text>
+  <text x="60" y="200" font-size="11" fill="#666666" text-anchor="end">4</text>
+  <text x="60" y="130" font-size="11" fill="#666666" text-anchor="end">6</text>
+  <line x1="88" y1="270" x2="850" y2="270" stroke="#eeeeee" stroke-width="1"/>
+  <line x1="88" y1="200" x2="850" y2="200" stroke="#eeeeee" stroke-width="1"/>
+  <line x1="88" y1="130" x2="850" y2="130" stroke="#eeeeee" stroke-width="1"/>
+
+  <!-- groups: Critical, High, Medium, Low -->
+  <!-- Critical -->
+  <g>
+    <rect x="140" y="130" width="45" height="210" fill="#111111"/>
+    <text x="162" y="120" text-anchor="middle" font-size="12" font-weight="700" fill="#111111">6</text>
+    <rect x="190" y="330" width="45" height="10" fill="#c8c8c8"/>
+    <text x="212" y="320" text-anchor="middle" font-size="12" font-weight="700" fill="#666666">0</text>
+    <text x="197" y="365" text-anchor="middle" font-size="12" fill="#333333">Critical</text>
+  </g>
+
+  <!-- High -->
+  <g>
+    <rect x="290" y="165" width="45" height="175" fill="#111111"/>
+    <text x="312" y="155" text-anchor="middle" font-size="12" font-weight="700" fill="#111111">5</text>
+    <rect x="340" y="320" width="45" height="20" fill="#c8c8c8"/>
+    <text x="362" y="310" text-anchor="middle" font-size="12" font-weight="700" fill="#666666">1</text>
+    <text x="347" y="365" text-anchor="middle" font-size="12" fill="#333333">High</text>
+  </g>
+
+  <!-- Medium -->
+  <g>
+    <rect x="440" y="235" width="45" height="105" fill="#666666"/>
+    <text x="462" y="225" text-anchor="middle" font-size="12" font-weight="700" fill="#111111">3</text>
+    <rect x="490" y="270" width="45" height="70" fill="#c8c8c8"/>
+    <text x="512" y="260" text-anchor="middle" font-size="12" font-weight="700" fill="#666666">2</text>
+    <text x="497" y="365" text-anchor="middle" font-size="12" fill="#333333">Medium</text>
+  </g>
+
+  <!-- Low -->
+  <g>
+    <rect x="590" y="305" width="45" height="35" fill="#999999"/>
+    <text x="612" y="295" text-anchor="middle" font-size="12" font-weight="700" fill="#111111">1</text>
+    <rect x="640" y="305" width="45" height="35" fill="#c8c8c8"/>
+    <text x="662" y="295" text-anchor="middle" font-size="12" font-weight="700" fill="#666666">1</text>
+    <text x="647" y="365" text-anchor="middle" font-size="12" fill="#333333">Low</text>
+  </g>
+
+  <!-- legend -->
+  <g transform="translate(690,110)">
+    <rect x="0" y="0" width="16" height="16" fill="#111111"/>
+    <text x="24" y="13" font-size="12" fill="#333333">before (:8002)</text>
+    <rect x="0" y="26" width="16" height="16" fill="#c8c8c8"/>
+    <text x="24" y="39" font-size="12" fill="#333333">after (:8003 --hardened)</text>
+  </g>
+
+  <text x="450" y="405" text-anchor="middle" font-size="11" fill="#999999" font-style="italic">
+    Illustrative example run — actual counts vary because the target is a real LLM, not a scripted fixture.
+  </text>
+</svg>
