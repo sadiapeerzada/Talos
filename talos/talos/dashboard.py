@@ -15,7 +15,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
-from talos.monitoring import MonitorConfig, MonitorSnapshot, MonitoringManager
+from talos.monitoring import AlertRecord, MonitorConfig, MonitorSnapshot, MonitoringManager
 from talos.scan_service import (
     ADAPTERS,
     DEFAULT_ATTACKER_EMAIL,
@@ -243,6 +243,22 @@ def _dashboard_html() -> str:
       color: var(--muted);
       margin: 0;
     }}
+    .alerts-list {{
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 14px;
+    }}
+    .alert-card {{
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #fafafa;
+      padding: 14px;
+    }}
+    .alert-card h3 {{
+      margin: 0 0 6px;
+      font-size: 1rem;
+    }}
     .finding {{
       border: 1px solid var(--border);
       border-radius: 14px;
@@ -432,6 +448,12 @@ def _dashboard_html() -> str:
       <div id="monitor-history-empty" class="monitor-empty" style="margin-top: 16px;">No monitoring history yet.</div>
       <div id="monitor-history" class="history-list hidden"></div>
     </section>
+
+    <section class="panel">
+      <h2 style="margin: 0 0 14px;">Recent alerts</h2>
+      <p id="alerts-empty" class="monitor-empty">No alerts yet.</p>
+      <div id="alerts-list" class="alerts-list hidden"></div>
+    </section>
   </div>
 
   <script>
@@ -451,6 +473,8 @@ def _dashboard_html() -> str:
     const monitorStatusSubtext = document.getElementById("monitor-status-subtext");
     const monitorHistory = document.getElementById("monitor-history");
     const monitorHistoryEmpty = document.getElementById("monitor-history-empty");
+    const alertsEmpty = document.getElementById("alerts-empty");
+    const alertsList = document.getElementById("alerts-list");
     let activeMonitorId = null;
     let monitorPollTimer = null;
 
@@ -640,6 +664,33 @@ def _dashboard_html() -> str:
       }}).join("");
     }}
 
+    function renderAlerts(alerts) {{
+      if (!alerts.length) {{
+        alertsList.innerHTML = "";
+        alertsList.classList.add("hidden");
+        alertsEmpty.classList.remove("hidden");
+        return;
+      }}
+
+      alertsEmpty.classList.add("hidden");
+      alertsList.classList.remove("hidden");
+      alertsList.innerHTML = alerts.map((alert) => `
+        <div class="alert-card">
+          <div class="finding-header">
+            <div>
+              <h3>${{escapeHtml(alert.title)}}</h3>
+              <div class="status-subtext">${{escapeHtml(alert.message)}}</div>
+            </div>
+            <span class="${{badgeClass(alert.severity)}}">${{escapeHtml(alert.severity)}}</span>
+          </div>
+          <div class="history-meta">
+            <span>Kind: <strong>${{escapeHtml(alert.kind)}}</strong></span>
+            <span>Time: <strong>${{new Date(alert.created_at * 1000).toLocaleString()}}</strong></span>
+          </div>
+        </div>
+      `).join("");
+    }}
+
     function updateMonitorUI(snapshot) {{
       if (!snapshot) return;
       activeMonitorId = snapshot.active ? snapshot.monitor_id : activeMonitorId === snapshot.monitor_id ? null : activeMonitorId;
@@ -672,6 +723,7 @@ def _dashboard_html() -> str:
         if (!response.ok) throw new Error(`Monitor fetch failed with status ${{response.status}}`);
         const snapshot = await response.json();
         updateMonitorUI(snapshot);
+        await refreshAlerts(activeMonitorId);
         if (!snapshot.active && monitorPollTimer) {{
           clearInterval(monitorPollTimer);
           monitorPollTimer = null;
@@ -680,6 +732,16 @@ def _dashboard_html() -> str:
         monitorStatusText.textContent = "Monitor refresh failed.";
         monitorStatusSubtext.textContent = error.message;
       }}
+    }}
+
+    async function refreshAlerts(monitorId = null) {{
+      const url = monitorId ? `/api/alerts?monitor_id=${{encodeURIComponent(monitorId)}}` : "/api/alerts";
+      const response = await fetch(url);
+      if (!response.ok) {{
+        throw new Error(`Alerts fetch failed with status ${{response.status}}`);
+      }}
+      const alerts = await response.json();
+      renderAlerts(alerts);
     }}
 
     async function startMonitor() {{
@@ -704,6 +766,7 @@ def _dashboard_html() -> str:
         const snapshot = await response.json();
         activeMonitorId = snapshot.monitor_id;
         updateMonitorUI(snapshot);
+        await refreshAlerts(activeMonitorId);
         if (monitorPollTimer) clearInterval(monitorPollTimer);
         monitorPollTimer = setInterval(pollMonitor, 2000);
         await pollMonitor();
@@ -730,6 +793,7 @@ def _dashboard_html() -> str:
         }}
         activeMonitorId = null;
         startMonitorButton.disabled = false;
+        await refreshAlerts();
       }} catch (error) {{
         monitorStatusText.textContent = "Failed to stop monitor.";
         monitorStatusSubtext.textContent = error.message;
@@ -739,6 +803,7 @@ def _dashboard_html() -> str:
     form.addEventListener("submit", runScan);
     startMonitorButton.addEventListener("click", startMonitor);
     stopMonitorButton.addEventListener("click", stopMonitor);
+    refreshAlerts().catch(() => {{}});
   </script>
 </body>
 </html>"""
@@ -788,6 +853,11 @@ def run_scan(request: ScanRequest) -> StreamingResponse:
 @app.get("/api/monitors")
 def list_monitors() -> list[MonitorSnapshot]:
     return monitoring_manager.list_monitors()
+
+
+@app.get("/api/alerts")
+def list_alerts(monitor_id: str | None = None) -> list[AlertRecord]:
+    return monitoring_manager.list_alerts(monitor_id=monitor_id)
 
 
 @app.post("/api/monitors")

@@ -88,7 +88,7 @@ Given a target agent endpoint and an adapter, Talos:
 
 6. **Monitors agents continuously**
    - Re-runs full scans on a timer.
-   - Stores run history and the latest report in the dashboard.
+   - Stores run history, latest reports, and alerts for the dashboard.
    - Makes drift visible when a target starts behaving differently over time.
 
 ---
@@ -162,6 +162,7 @@ panel to:
 - optionally cap the number of runs,
 - start recurring full scans,
 - watch monitoring history accumulate over time,
+- see persisted alerts when critical/high findings increase or a recurring scan fails,
 - inspect the latest findings from the most recent run.
 
 ---
@@ -276,8 +277,10 @@ The dashboard also exposes monitoring APIs for recurring scans:
 - `GET /api/monitors`
 - `GET /api/monitors/{monitor_id}`
 - `POST /api/monitors/{monitor_id}/stop`
+- `GET /api/alerts`
 
-These endpoints keep in-memory run history for the local dashboard session.
+These endpoints now persist monitor state, run history, and alerts to a local
+SQLite database for the dashboard.
 
 ---
 
@@ -291,6 +294,8 @@ What it does today:
 - re-runs the **full** Talos scan on a timer,
 - stores a history of recent runs,
 - keeps the latest structured report ready for the dashboard,
+- persists monitor metadata, run history, and alerts in SQLite,
+- raises local alerts when recurring scans fail or severity counts increase,
 - supports stopping a monitor cleanly,
 - works with both `template` and `adaptive` attack strategies.
 
@@ -302,9 +307,10 @@ What it is good for:
 
 Current scope:
 
-- monitor state is stored **in memory** inside the dashboard process,
-- this is designed for local/demo use right now,
-- there is no long-term persistence, alert delivery, or distributed worker system yet.
+- persistence is local-first and SQLite-backed,
+- alerts are currently surfaced through the dashboard/API rather than external delivery,
+- this is still designed for local/demo and single-node workflows,
+- there is no distributed worker system or webhook/email alert transport yet.
 
 ---
 
@@ -502,6 +508,14 @@ Best for:
 - quick regression checks,
 - demoing that Talos can watch a target over time instead of only testing once.
 
+### 4. Persistent alerts for recurring scans
+
+Best for:
+
+- spotting new critical/high findings quickly,
+- seeing recurring scan failures immediately,
+- surfacing local security drift without leaving the dashboard.
+
 ---
 
 ## Known simplifications
@@ -516,9 +530,10 @@ This version is intentionally focused and honest about its boundaries:
   Anthropic-backed mutation, but it does not yet include long-horizon search,
   cross-engagement learning, or reinforcement updates.
 
-- **Continuous monitoring is currently in-memory.**
-  Monitor history lives inside the local dashboard server process and is not yet
-  persisted to a database or external event system.
+- **Persistent monitoring is local-first.**
+  State is persisted to a local SQLite store for the dashboard, but external
+  alert channels, multi-user coordination, and long-term analytics are not yet
+  built.
 
 - **Scoring uses known test-environment ground truth.**
   It reasons from observable traces plus known order totals / allowed domains.
@@ -545,6 +560,7 @@ The tests spin up real sample-agent subprocesses and validate:
 - dashboard HTML serving,
 - dashboard scan streaming,
 - monitoring lifecycle and run history,
+- persistent alert generation,
 - end-to-end findings behavior.
 
 ---
