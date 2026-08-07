@@ -128,7 +128,33 @@ Given a target agent endpoint and an adapter, Talos:
 
 ## Architecture
 
-See **Figure 1** above for the visual pipeline. In text form:
+See **Figure 1** above for the SVG version. GitHub also renders this natively as Mermaid — no image dependency, and it stays a live diagram straight from the markdown source:
+
+```mermaid
+flowchart TD
+    A["Target Agent<br/>(LangChain / native function-calling)"] --> B["Adapter Normalization"]
+    B --> C["Tool-Graph Discovery<br/>(tools · params · side effects)"]
+    C --> D["Attack Generation<br/>(35 templates · adaptive refinement)"]
+    D --> E["Live Execution<br/>(real agent, real traces)"]
+    E --> F["Scoring & Deduplication<br/>(severity · reproducibility)"]
+    F --> G["Report + Dashboard<br/>(Markdown · streaming JSON)"]
+    G --> H["Continuous Monitoring<br/>(recurring scans, SQLite history, alerts)"]
+    G --> I["Cross-Engagement Learning<br/>(template/class performance)"]
+    H -.re-triggers.-> D
+    I -.re-prioritizes.-> D
+
+    style A fill:#ffffff,stroke:#111111,stroke-width:2px
+    style B fill:#ffffff,stroke:#111111,stroke-width:2px
+    style C fill:#ffffff,stroke:#111111,stroke-width:2px
+    style D fill:#ffffff,stroke:#111111,stroke-width:2px
+    style E fill:#ffffff,stroke:#111111,stroke-width:2px
+    style F fill:#ffffff,stroke:#111111,stroke-width:2px
+    style G fill:#111111,stroke:#111111,color:#ffffff
+    style H fill:#ffffff,stroke:#111111,stroke-width:2px,stroke-dasharray: 4 3
+    style I fill:#ffffff,stroke:#111111,stroke-width:2px,stroke-dasharray: 4 3
+```
+
+Or as plain text, for anywhere Mermaid isn't supported:
 
 ```text
 Target agent
@@ -153,6 +179,32 @@ Markdown report + streaming dashboard JSON
     │
     ├──▶ Continuous monitoring   (recurring scans, SQLite history, alerts)
     └──▶ Cross-engagement learning (template/class performance → re-prioritization)
+```
+
+### Attack execution, sequence view
+
+The pipeline above shows the pipeline stages; this shows what actually happens on the wire for a single attack attempt against a live target:
+
+```mermaid
+sequenceDiagram
+    participant Op as Operator (CLI / Dashboard)
+    participant Talos as Talos Engine
+    participant Graph as Tool Graph
+    participant Target as Target Agent
+    participant Tool as Agent's Tool
+
+    Op->>Talos: talos-scan --target <url> --adapter native
+    Talos->>Target: discover tool spec
+    Target-->>Talos: tool list + schemas
+    Talos->>Graph: build graph (side effects, privilege)
+    Graph-->>Talos: annotated tool graph
+    Talos->>Talos: select template / adaptive attack
+    Talos->>Target: send crafted attacker message
+    Target->>Tool: agent invokes tool (e.g. issue_refund)
+    Tool-->>Target: tool result
+    Target-->>Talos: full trace (messages + tool calls)
+    Talos->>Talos: score severity, check reproducibility
+    Talos-->>Op: finding + evidence + repro steps
 ```
 
 ### Repository layout
