@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/architecture-pipeline.svg" alt="Talos pipeline" width="120"/>
+<img src="assets/talos-logo.svg" alt="Talos logo" width="140"/>
 
 # Talos (Τάλως)
 
@@ -20,13 +20,25 @@
 
 **Built for the BMW Amulate Hackathon**
 
-[The Myth](#the-myth-and-the-thesis) · [Why Talos](#why-talos) · [What It Does](#what-talos-does) · [Architecture](#architecture) · [Live Demo](#live-demo-flow) · [Quick Start](#quick-start) · [Before/After](#before--after-proving-talos-validates-a-fix-not-just-a-break) · [Roadmap](#roadmap) · [Judges' Checklist](#for-the-judges-what-to-look-at-in-5-minutes)
+### [🡒 Try Talos live: talos-red-team.vercel.app](https://talos-red-team.vercel.app)
+
+[The Myth](#the-myth-and-the-thesis) · [Why Talos](#why-talos) · [Architecture](#architecture) · [What It Does](#what-talos-does) · [Live Demo](#live-demo-flow) · [Quick Start](#quick-start) · [Before/After](#before--after-proving-talos-validates-a-fix-not-just-a-break) · [Roadmap](#roadmap) · [Judges' Checklist](#for-the-judges-what-to-look-at-in-5-minutes)
 
 </div>
 
 <br/>
 
+> **Note on images in this README:** all diagrams live in `/assets` on the `main` branch. If you're viewing this file somewhere that doesn't resolve relative paths (npm registry, some IDE previews), swap the relative `assets/...` paths below for the raw GitHub URL pattern:
+> `https://raw.githubusercontent.com/<your-org>/talos/main/assets/<file>.svg`
+
 ---
+
+<p align="center">
+  <img src="assets/architecture-pipeline.svg" alt="Talos end-to-end architecture: target agent, adapter normalization, tool-graph discovery, attack generation, live execution, scoring, reporting, monitoring, and cross-engagement learning" width="100%"/>
+</p>
+<p align="center"><sub><b>Figure 1.</b> The full Talos pipeline — discover → attack → prove → monitor → learn — end to end.</sub></p>
+
+<br/>
 
 ## The myth, and the thesis
 
@@ -84,9 +96,7 @@ Given a target agent endpoint and an adapter, Talos:
 
 ## Architecture
 
-<p align="center">
-  <img src="assets/architecture-pipeline.svg" alt="Talos architecture pipeline diagram" width="100%"/>
-</p>
+See **Figure 1** above for the visual pipeline. In text form:
 
 ```text
 Target agent
@@ -146,6 +156,7 @@ tests/                  End-to-end and parity tests
 <p align="center">
   <img src="assets/exploit-taxonomy.svg" alt="Talos exploit taxonomy: 7 classes, 35 templates" width="100%"/>
 </p>
+<p align="center"><sub><b>Figure 2.</b> The 7 exploit classes Talos tests against, and the 35 templates behind them.</sub></p>
 
 | # | Class | Mechanism | Example failure mode |
 |---|---|---|---|
@@ -186,6 +197,7 @@ These classes are deliberately centered on **agent-specific failure modes**, not
 <p align="center">
   <img src="assets/demo-flow.svg" alt="Talos live demo story arc: target URL to tool graph to attack execution to critical finding to monitor and learn" width="100%"/>
 </p>
+<p align="center"><sub><b>Figure 3.</b> The 5-step arc judges watch happen live, end to end.</sub></p>
 
 ### Hackathon demo script
 
@@ -224,6 +236,12 @@ Starts a local FastAPI server and opens a dashboard where you can enter the targ
 ### Option C — Continuous monitoring demo
 
 Start the dashboard, point it at a target, and use the **Continuous monitoring** panel to set an interval, optionally cap run count, start recurring scans, watch history accumulate, and see persisted alerts when critical/high findings increase or a scan fails.
+
+<br/>
+
+## Try it live
+
+No install needed to look around: **[talos-red-team.vercel.app](https://talos-red-team.vercel.app)** hosts the Talos dashboard experience for judges to click through directly. For a full live scan against your own agent (or the bundled sample targets), run Talos locally per the [Quick Start](#quick-start) below — a hosted scan against arbitrary third-party endpoints isn't exposed publicly for obvious abuse reasons.
 
 <br/>
 
@@ -314,6 +332,7 @@ Because this target is backed by a real model instead of a scripted brain, resul
 <p align="center">
   <img src="assets/before-after.svg" alt="Before/after severity comparison between vulnerable and hardened agent" width="100%"/>
 </p>
+<p align="center"><sub><b>Figure 4.</b> Same model, same tools — findings drop sharply once the hardened policy backstop is added. Illustrative counts; swap in your real scan output before presenting.</sub></p>
 
 `real_agent_server.py` also has a `--hardened` mode, showing Talos is useful for **validating a fix**, not only for finding a break. Hardened mode adds two layers on top of the same underlying model and tools:
 
@@ -476,7 +495,8 @@ Security-audit SaaS for point-in-time engagements, with a continuous-monitoring 
 
 ## For the judges: what to look at in 5 minutes
 
-1. **`talos-dashboard`** → run one scan → watch tools discovered, attacks run, and a critical finding land live.
+0. **[talos-red-team.vercel.app](https://talos-red-team.vercel.app)** → click through the hosted dashboard, no setup required.
+1. **`talos-dashboard`** (local) → run one scan → watch tools discovered, attacks run, and a critical finding land live.
 2. **Open the finding** → point at the exact attacker prompt and tool-call evidence — this is not a canned string.
 3. **Point at `real_agent_server.py`** → this is a real LLM, not a fixture, and Talos still finds real issues.
 4. **Run the before/after** (`:8002` vs `:8003 --hardened`) → same model, same tools, dramatically fewer criticals — proof Talos measures a real security delta, not noise.
