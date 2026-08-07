@@ -14,6 +14,7 @@ from talos.graph.discovery import build_tool_graph
 from talos.harness.base import TargetAgent
 from talos.harness.langchain_adapter import LangChainAdapter
 from talos.harness.native_adapter import NativeAdapter
+from talos.learning import LearningStore
 from talos.reporting.report import ScanReport, build_report
 
 ADAPTERS = {"langchain": LangChainAdapter, "native": NativeAdapter}
@@ -96,6 +97,8 @@ def iter_scan_progress(
     )
 
     graph = build_tool_graph(tools)
+    learning_store = LearningStore()
+    learning_hints = learning_store.get_hints()
     ctx = AttackContext(
         graph=graph,
         seed_order_ids=seed_order_ids or DEFAULT_SEED_ORDER_IDS,
@@ -103,6 +106,8 @@ def iter_scan_progress(
         attacker_email=attacker_email or DEFAULT_ATTACKER_EMAIL,
         generation_strategy=generation_strategy,
         attack_model=attack_model,
+        template_success_scores=learning_hints.template_scores,
+        exploit_class_success_scores=learning_hints.exploit_class_scores,
     )
 
     preview_attacks = generate_all(
@@ -113,6 +118,8 @@ def iter_scan_progress(
             attacker_email=ctx.attacker_email,
             generation_strategy="template",
             attack_model=attack_model,
+            template_success_scores=ctx.template_success_scores,
+            exploit_class_success_scores=ctx.exploit_class_success_scores,
         )
     )
     exploit_classes = sorted({attack.exploit_class for attack in preview_attacks})
@@ -173,6 +180,14 @@ def iter_scan_progress(
             graph=graph,
             findings=[],
             templates_run=0,
+        )
+
+    if scored_findings:
+        learning_store.record_scan(
+            target=target,
+            adapter=adapter_name,
+            strategy=generation_strategy,
+            findings=scored_findings,
         )
 
     yield ScanProgressEvent(

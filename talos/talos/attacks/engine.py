@@ -44,6 +44,16 @@ def generate_next_round(
     instances: list[AttackInstance] = []
     already_tried = {tid for r in (previous_results or []) if (tid := _extract_template_id(r))}
     candidates = [t for t in ALL_TEMPLATES if t.id not in already_tried and t.applies(ctx)]
+    if ctx.template_success_scores or ctx.exploit_class_success_scores:
+        candidate_order = {template.id: index for index, template in enumerate(candidates)}
+        candidates.sort(
+            key=lambda template: (
+                ctx.template_success_scores.get(template.id, 0.0),
+                ctx.exploit_class_success_scores.get(template.exploit_class, 0.0),
+                -candidate_order[template.id],
+            ),
+            reverse=True,
+        )
 
     adaptive_quota = 0
     if ctx.generation_strategy == "adaptive" and previous_results:
