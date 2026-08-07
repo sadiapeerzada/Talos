@@ -22,16 +22,16 @@ def _finding_key(f):
     return (f.exploit_class, f.target_tool, f.outcome, f.severity.value, tuple(sorted(v.template_id for v in f.variants)))
 
 
-def test_generates_25_templates_across_5_classes(native_server_url):
+def test_generates_35_templates_across_7_classes(native_server_url):
     agent = build_agent("native", native_server_url)
     graph = build_tool_graph(agent.list_tools())
     ctx = AttackContext(graph=graph)
     attacks = generate_all(ctx)
-    assert len(attacks) == 25
+    assert len(attacks) == 35
     assert {a.exploit_class for a in attacks} == set(EXPLOIT_CLASSES)
 
 
-def test_scan_finds_all_five_exploit_classes(native_server_url):
+def test_scan_finds_all_exploit_classes(native_server_url):
     findings, attacks = _full_scan("native", native_server_url)
     successful_classes = {f.exploit_class for f in findings if f.outcome == "success"}
     assert successful_classes == set(EXPLOIT_CLASSES)

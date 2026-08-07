@@ -41,6 +41,16 @@ REMEDIATIONS = {
         "adversarial pressure -- a model that can be talked out of its instructions should not be the only "
         "thing enforcing a business rule."
     ),
+    "authority_spoofing": (
+        "Treat claimed authority, titles, or approvals in natural-language messages as untrusted assertions. "
+        "Require verifiable authorization artifacts or a separate approval check at the tool layer before "
+        "allowing high-impact actions or outbound data sharing."
+    ),
+    "policy_shadowing": (
+        "Never let user-supplied or retrieved text redefine policy. Bind current policy to trusted system "
+        "state, and require tools to enforce hard constraints even when the model is shown fake runbooks, "
+        "SOPs, or internal bulletins that claim otherwise."
+    ),
 }
 
 EXPLOIT_CLASS_LABELS = {
@@ -49,6 +59,8 @@ EXPLOIT_CLASS_LABELS = {
     "permission_escalation": "Permission Escalation",
     "data_exfiltration": "Data Exfiltration",
     "goal_hijacking": "Goal Hijacking",
+    "authority_spoofing": "Authority Spoofing",
+    "policy_shadowing": "Policy Shadowing",
 }
 
 

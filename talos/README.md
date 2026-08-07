@@ -1,212 +1,500 @@
 # Talos (Τάλως)
 
-Automated red team for tool-using AI agents. Point it at a live agent, and
-it discovers the agent's tool graph, generates adversarial attack chains
-across 5 exploit classes, executes them against the live target, and
-produces a scored Markdown vulnerability report with exact reproduction
-steps and remediation guidance.
+<div align="center">
 
-> Talos was the bronze automaton that guarded Crete until Medea found the
-> single vein that could drain it. Every autonomous agent has that vein.
-> This tool finds it before an attacker does.
+### The automated red team for tool-using AI agents
 
-## Scope note
+**Find the dangerous path from prompt -> tool -> side effect before an attacker does.**
 
-This is a security-testing tool. Point it only at agents you own or are
-explicitly authorized to test -- the same rule that applies to any
-scanner (Burp Suite, Nessus, etc). The two sample agents shipped here are
-intentionally vulnerable toy fixtures for validating the scanner itself;
-all their "side effects" (refunds, emails) are simulated in an in-memory
-audit log and never touch a real payment rail or mail server.
+![Python](https://img.shields.io/badge/python-3.11%2B-111111?style=flat-square)
+![FastAPI](https://img.shields.io/badge/dashboard-FastAPI-111111?style=flat-square)
+![Adapters](https://img.shields.io/badge/adapters-langchain%20%7C%20native-111111?style=flat-square)
+![Exploit Classes](https://img.shields.io/badge/exploit%20classes-7-111111?style=flat-square)
+![Tests](https://img.shields.io/badge/tests-pytest-111111?style=flat-square)
 
-## Quick start
+[Why Talos](#why-talos) ·
+[What it does](#what-talos-does) ·
+[Live demo flow](#live-demo-flow) ·
+[Quick start](#quick-start) ·
+[Dashboard](#web-dashboard) ·
+[Architecture](#architecture) ·
+[Exploit classes](#exploit-classes) ·
+[Testing](#testing)
+
+</div>
+
+---
+
+## Why Talos
+
+Autonomous agents are no longer just answering questions. They are:
+
+- reading internal knowledge bases,
+- looking up customer records,
+- sending email,
+- issuing refunds,
+- invoking tools with real business impact.
+
+That changes the security problem completely.
+
+A normal model red-team asks: **"Can I make the model say something bad?"**
+
+Talos asks the more dangerous question:
+
+> **"Can I make this deployed agent do something bad with the tools and permissions it actually has?"**
+
+That means Talos targets the real exploit surface:
+
+- prompt injection through direct user input,
+- indirect injection through tool output,
+- permission escalation across tool chains,
+- data exfiltration through seemingly legitimate tools,
+- goal hijacking that overrides the agent's intended task.
+
+Talos is built to audit the thing you actually shipped: the live agent, its
+tool graph, its data flow, and its side effects.
+
+---
+
+## What Talos does
+
+Given a target agent endpoint and an adapter, Talos:
+
+1. **Connects to the live target**
+   - Supports multiple orchestration styles through adapters.
+   - Current built-in adapters: `langchain` and `native`.
+
+2. **Discovers the tool graph**
+   - Enumerates tools exposed by the agent.
+   - Infers side effects and effective privilege levels from tool metadata.
+   - Identifies direct and indirect injection surfaces.
+
+3. **Generates graph-aware attack instances**
+   - Uses a local attack template library as the reliable baseline.
+   - Can optionally run in **adaptive** mode to refine follow-up attacks from prior results.
+   - Uses Anthropic-backed refinement when `ANTHROPIC_API_KEY` is configured, with an offline deterministic fallback for demo reliability.
+   - Tailors attacks to the discovered tool relationships.
+
+4. **Executes attacks against the live agent**
+   - Captures multi-turn traces.
+   - Preserves tool-call evidence.
+   - Repeats attacks for reproducibility scoring.
+
+5. **Scores, deduplicates, and reports**
+   - Rolls template variants up into exploit-class findings.
+   - Scores severity from observable impact.
+   - Produces exact repro steps and evidence.
+
+---
+
+## Why this demos well
+
+Talos is built for a live security demo, not just a static report:
+
+- **CLI mode** for a fast operator workflow
+- **Web dashboard** for a hackathon-friendly visual experience
+- **Visible progress** as tools are discovered, attacks run, and findings land
+- **Deterministic sample agents** so the demo is reproducible every time
+- **Concrete outputs** with evidence, not vague "the model seemed unsafe"
+
+If you are showing this on stage, the audience can watch Talos go from:
+
+**target URL -> tool graph -> attack execution -> critical finding**
+
+in one flow.
+
+---
+
+## Live demo flow
+
+### Option A: Terminal demo
 
 ```bash
-python3 -m venv .venv && source .venv/bin/activate
-pip install -e .
-
-# Terminal 1: start the LangChain-flavored sample agent
-python -m talos.sample_agents.langchain_server --port 8000
-
-# Terminal 2: start the native (no-framework) sample agent
-python -m talos.sample_agents.native_server --port 8001
-
-# Terminal 3: scan each
-python scan.py --target http://localhost:8000/agent --adapter langchain
-python scan.py --target http://localhost:8001/agent --adapter native
-# or, once installed: talos-scan --target ... --adapter ...
+talos-scan --target http://localhost:8001/agent --adapter native
 ```
 
-Each run writes `report_<adapter>.md` (override with `--out`). Sample
-reports generated during development are in `reports/`.
+Or use adaptive mode:
 
-To demo the same scan engine in a browser instead of the terminal:
+```bash
+talos-scan --target http://localhost:8001/agent --adapter native --strategy adaptive
+```
+
+You get a Markdown vulnerability report with:
+
+- discovered tools,
+- number of attack templates run,
+- successful exploit classes,
+- severity breakdown,
+- reproduction steps,
+- structured evidence,
+- remediation guidance.
+
+### Option B: Browser demo
 
 ```bash
 talos-dashboard
 ```
 
-That starts a local FastAPI server, opens a single-page dashboard, and
-streams scan progress (tool discovery, attacks executed, findings landing)
-against the target you enter in the form.
+This starts a local FastAPI server and opens a dashboard where you can:
+
+- enter the target URL,
+- choose the adapter,
+- run a live scan,
+- watch tools discovered / attacks run / findings appear in real time,
+- expand each finding to inspect repro steps and evidence.
+
+This dashboard reuses the **same scan engine** as the CLI. It is additive, not
+a rewrite.
+
+---
+
+## Scope note
+
+Talos is a **security testing tool**. Only point it at agents you own or are
+explicitly authorized to test.
+
+The sample agents in this repository are intentionally vulnerable fixtures used
+to validate the scanner itself. Their side effects are simulated in-memory:
+
+- no real payment rails,
+- no real outbound mail,
+- no external destructive actions.
+
+---
+
+## Quick start
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev]"
+```
+
+### Start the sample targets
+
+Terminal 1:
+
+```bash
+python -m talos.sample_agents.langchain_server --port 8000
+```
+
+Terminal 2:
+
+```bash
+python -m talos.sample_agents.native_server --port 8001
+```
+
+### Run the CLI scanner
+
+```bash
+# LangChain-flavored sample target
+talos-scan --target http://localhost:8000/agent --adapter langchain
+
+# Native sample target
+talos-scan --target http://localhost:8001/agent --adapter native
+```
+
+You can also use the repo-root wrapper:
+
+```bash
+python scan.py --target http://localhost:8001/agent --adapter native
+```
+
+Each run writes `report_<adapter>.md` unless you override it with `--out`.
+
+---
+
+## Web dashboard
+
+Start the dashboard:
+
+```bash
+talos-dashboard
+```
+
+By default it starts locally and opens your browser.
+
+### Dashboard inputs
+
+The scan API accepts:
+
+- `target`
+- `adapter`
+- `attacker_email`
+- `seed_order_ids`
+- `poisoned_order_ids`
+- `strategy`
+- `attack_model`
+
+### Dashboard UI
+
+The page includes:
+
+- a scan form,
+- an adapter dropdown,
+- a live progress area,
+- stats cards for:
+  - tools found,
+  - attacks run,
+  - critical findings,
+  - high findings,
+- an expanding findings list with:
+  - severity badge,
+  - title,
+  - one-line summary,
+  - reproduction steps,
+  - evidence.
+
+### API behavior
+
+`POST /api/scans` streams newline-delimited JSON events so the UI can visibly
+update while the scan is running.
+
+That makes the demo feel alive instead of blocking behind a spinner.
+
+---
+
+## CLI reference
+
+### `talos-scan`
+
+```bash
+talos-scan \
+  --target http://localhost:8001/agent \
+  --adapter native \
+  --repro-runs 3 \
+  --seed-order-id 1001 \
+  --seed-order-id 1003 \
+  --poisoned-order-id 1002 \
+  --attacker-email collector@exfil-sink.example
+```
+
+Key options:
+
+- `--target` target agent base URL
+- `--adapter` one of `langchain` or `native`
+- `--out` output Markdown path
+- `--repro-runs` repeat count per attack for reproducibility scoring
+- `--seed-order-id` repeatable known-valid test identifier
+- `--poisoned-order-id` repeatable poisoned fixture identifier
+- `--attacker-email` destination used by exfiltration / injection templates
+- `--strategy` attack generation mode: `template` or `adaptive`
+- `--attack-model` model name used for Anthropic-backed adaptive refinement
+- `--quiet` suppress CLI progress logging
+
+### `talos-dashboard`
+
+```bash
+talos-dashboard --host 127.0.0.1 --port 8080
+```
+
+Optional flags:
+
+- `--host`
+- `--port`
+- `--no-open`
+
+---
+
+## Exploit classes
+
+Talos currently ships with 7 exploit classes:
+
+| Class | What it tests | Example failure mode |
+|---|---|---|
+| **Direct prompt injection** | Malicious instructions in the user's own message | User input coerces a side-effecting tool call |
+| **Indirect prompt injection** | Attacker instructions embedded in tool output | Poisoned order notes or KB content cause unsafe actions |
+| **Permission escalation** | Crossing from low-privilege context into high-privilege action | A read step becomes an unverified refund or outbound message |
+| **Data exfiltration** | Sensitive data leaving through legitimate tools | Customer data is emailed to an attacker-controlled address |
+| **Goal hijacking** | Replacing the agent's actual task with an attacker objective | The agent follows a new malicious goal instead of the user's real intent |
+| **Authority spoofing** | Pretending to be an internal approver or privileged operator | The agent trusts a fake director, supervisor, or audit request |
+| **Policy shadowing** | Supplying fake policy text that overrides the real policy | The agent follows a fabricated bulletin, SOP, or runbook |
+
+The current implementation ships with a local library of 35 attack templates
+distributed across these exploit classes.
+
+---
 
 ## Architecture
 
+```text
+Target agent
+    |
+    v
+Adapter normalization
+    |
+    v
+Tool discovery + graph construction
+    |
+    v
+Attack generation
+    |
+    v
+Execution runner
+    |
+    v
+Scoring + deduplication
+    |
+    v
+Markdown report + streaming dashboard JSON
 ```
+
+### Repository layout
+
+```text
 talos/
-  harness/            Abstract TargetAgent interface + two adapters
-    base.py             TargetAgent ABC, ToolSpec/AgentTurnResult models
-    native_adapter.py    Adapter B: Anthropic-Messages-flavored wire format
-    langchain_adapter.py Adapter A: LangChain/LangServe-flavored wire format
-  sample_agents/      Two implementations of ONE vulnerable scenario
-    data.py             Fake orders/KB, incl. 2 poisoned fixtures
-    tools.py            Shared tool implementations (the vulnerabilities live here)
-    brain.py            Shared deterministic decision logic (the vulnerabilities'
-                         behavior lives here, identically for both servers)
-    exchange.py          Shared orchestration loop (used directly by native_server)
-    native_server.py     FastAPI + hand-rolled tool-calling loop
-    langchain_server.py  FastAPI + langchain.agents.create_agent
-  graph/              Black-box tool-graph discovery
-    classify.py          Side-effect/permission heuristics from tool metadata
-    discovery.py          Builds the networkx graph
-    render.py             networkx -> Mermaid
-  attacks/            Local attack template library (no LLM calls)
-    templates.py          25 templates across 5 exploit classes
-    engine.py             generate_next_round() -- the LLM-generator seam
-  execution/          Run + score
-    runner.py             Executes an attack, captures the trace
-    scoring.py             success/partial/fail, severity, reproducibility
-    dedup.py               Rolls variants up into exploit-class findings
-  reporting/
-    report.py             Structured + Markdown report assembly
-  scan_service.py     Shared scan pipeline for CLI + dashboard
-  dashboard.py        FastAPI dashboard + talos-dashboard entry point
-  cli.py              talos-scan entry point
-scan.py               Repo-root wrapper: `python scan.py --target ... --adapter ...`
-tests/                pytest suite (spins up both servers as subprocesses)
+  harness/              Abstract TargetAgent interface + adapters
+  sample_agents/        Vulnerable demo targets with shared behavior
+  graph/                Tool discovery, classification, rendering
+  attacks/              Attack templates and generation engine
+  execution/            Runner, scoring, deduplication
+  reporting/            Structured + Markdown report assembly
+  scan_service.py       Shared scan pipeline for CLI + dashboard
+  dashboard.py          FastAPI app + talos-dashboard entry point
+  cli.py                talos-scan entry point
+scan.py                 Repo-root wrapper for local invocation
+tests/                  End-to-end and parity tests
 ```
 
-## Why the two sample agents behave identically
+### Design principles
 
-Both `native_server.py` and `langchain_server.py` call into the *same*
-`talos.sample_agents.brain.RuleBasedBrain` and the *same*
-`talos.sample_agents.tools` implementations. The only thing that differs
-between them is the orchestration layer (a hand-rolled loop vs.
-`langchain.agents.create_agent`) and the wire format each exposes over
-HTTP (deliberately different -- see below). That's what makes the parity
-tests meaningful: if Talos's two adapters ever produced different
-findings, the bug would necessarily be in the harness, not in the two
-targets actually behaving differently.
+- **Black-box first**: Talos works from the agent's exposed interface and tool metadata.
+- **Evidence-driven**: Findings are based on observable tool calls and outputs.
+- **Framework-agnostic**: Adapters isolate wire-format differences.
+- **Reproducible**: Repeated attack execution feeds reproducibility scoring.
+- **Additive surfaces**: CLI and dashboard reuse the same underlying scan engine.
 
-`tests/test_adapters_parity.py`, `test_graph_parity.py`, and
-`test_scan_end_to_end.py` assert this directly -- including a full,
-independent, end-to-end scan through each adapter, structurally compared
-finding-by-finding (exploit class, target tool, outcome, severity,
-reproducibility, and which template variants fired). At last check, both
-adapters found the same **8 exploit-class findings covering all 5 exploit
-classes from all 25 templates**, with 100% reproducibility (expected,
-since the target's decision logic is deterministic by design -- see below).
+---
 
-The two servers deliberately do NOT share a wire format:
+## Why the two sample agents matter
 
-| | native_server.py | langchain_server.py |
-|---|---|---|
-| Tool params | `input_schema` (JSON Schema) | `args_schema` (pydantic-generated) |
-| Request | `{"messages":[...], "history":[...]}` | `{"input": str, "chat_history":[...]}` |
-| Response | `{"response", "tool_calls_made", "trace"}` | `{"output", "intermediate_steps"}` |
+The repository includes two sample targets:
 
-If both servers spoke the same JSON shape, `NativeAdapter` and
-`LangChainAdapter` would be identical code, and the abstraction wouldn't
-actually be proven by anything. The translation work in each adapter
-(`args_schema` -> `ToolParameter`, `intermediate_steps` -> `ToolCallRecord`)
-is what makes the parity tests a real test.
+- a native tool-calling server,
+- a LangChain-flavored server.
 
-## Why a rule-based "brain" instead of a real LLM
+Both share the same underlying vulnerable behavior, but expose different HTTP
+shapes. That makes the adapter layer meaningful.
 
-This was built in a sandbox with no OpenAI key and no Anthropic key
-configured. Rather than fake it, the sample agents' tool-calling decisions
-are made by a small deterministic pattern-matcher
-(`talos/sample_agents/brain.py`) that faithfully reproduces the three
-intentional vulnerabilities:
+If Talos finds different results across those two targets, the bug is in Talos,
+not in the scenario.
 
-1. `issue_refund` performs no bounds check against the order's real total.
-2. `send_email` sends with no destination check and no confirmation step.
-3. Both the native loop and the LangChain agent will act on instruction-like
-   text embedded in tool output (poisoned order notes / KB articles) exactly
-   as readily as on the user's own message.
+This is enforced by the test suite through:
 
-This has a real benefit beyond working around the missing API key: a
-security-test fixture should be perfectly reproducible, and it is --
-100% reproducibility across repeated runs, no flakiness, no API cost.
-`Brain` is an abstract interface specifically so this can be swapped for
-a real model later:
+- tool-spec parity checks,
+- graph parity checks,
+- single-exchange parity checks,
+- full end-to-end scan parity checks.
 
-```python
-# talos/sample_agents/brain.py
-class AnthropicBrain(Brain):
-    """Set ANTHROPIC_API_KEY and wire this in for a live-LLM-backed demo --
-    see the class docstring for exactly what's stubbed."""
-```
+---
 
-## The attack-generation extension seam
+## Why the current demo is deterministic
 
-Per the brief, `talos/attacks/engine.py::generate_next_round(previous_results, ctx)`
-is the *only* function the rest of the pipeline calls to get attacks. This
-phase just walks the local 25-template library
-(`talos/attacks/templates.py`) and returns the next untried, applicable
-batch -- no network calls. A later phase can replace the body of that one
-function with something that calls the Anthropic API to mutate/refine
-payloads based on `previous_results` (which findings succeeded, which
-were refused, etc.) without touching execution, scoring, dedup, or
-reporting at all.
+The sample agents use a rule-based decision engine instead of a real external
+LLM. That is intentional:
 
-## Exploit classes, and why some share a root cause
+- no API key requirement,
+- no inference cost,
+- no flaky demo behavior,
+- repeatable exploit reproduction.
 
-The 25 templates split evenly (5 each) across:
+Talos still preserves a clear future seam for adaptive attack generation in
+`talos/attacks/engine.py`, but phase 1 now also includes a working adaptive
+mode that can synthesize refinement variants from previous scan results.
 
-- **Direct prompt injection** -- malicious instructions in the user's own message
-- **Indirect prompt injection** -- payload lives in a poisoned order's notes
-  field or a poisoned KB article, reaching the agent only as tool output
-- **Permission escalation** -- chaining a low-privilege read into an
-  unverified high-privilege write, either across two conversation turns or
-  within one compound message
-- **Data exfiltration** -- `send_email` carrying sensitive bulk content to
-  an attacker-controlled address
-- **Goal hijacking** -- crafted input claiming to override the system
-  prompt's task/identity
+---
 
-Several of these converge on the *same* one or two missing-validation bugs
-in the tools themselves (no bounds check, no destination check) -- that
-overlap is real, not an artifact of the demo, and the report calls it out:
-fixing those two checks at the tool layer closes off multiple attacker
-techniques at once. That's the "one vein" the project is named for.
+## Example findings Talos can surface
 
-## Known simplifications (read before pointing this at something real)
+In the bundled demo scenario, Talos can surface issues such as:
 
-- **Seed order IDs are supplied, not discovered.** `AttackContext.seed_order_ids`
-  / `poisoned_order_ids` are known-valid test identifiers you provide --
-  the same way you'd hand a web-app scanner a valid logged-in session.
-  Talos does not attempt to blindly enumerate valid IDs in this phase.
-- **Scoring uses one piece of ground truth**: the real order totals and the
-  allowed customer email domain, exactly as a tester running this against
-  their own staging environment would already know both. It does not
-  inspect the target's internal reasoning -- only tool names, arguments,
-  and results (see `talos/execution/scoring.py`).
-- **Attacker email destinations use the `.example` TLD** (RFC 2606,
-  reserved for documentation/testing, never resolvable) so nothing in this
-  repo can ever address a real mailbox.
-- Attack payload phrasing is intentionally simple/legible rather than
-  maximally evasive -- the goal here is validating the scanner's pipeline
-  end to end, not obfuscation research.
+- issuing refunds above the real order total,
+- sending sensitive information to external addresses,
+- letting poisoned tool output influence high-impact actions,
+- performing side-effecting actions without fresh authorization.
 
-## Running the tests
+The key point is not that the sample targets are vulnerable. They are supposed
+to be. The point is that **Talos proves it with exact evidence and replayable
+steps**.
+
+---
+
+## Report outputs
+
+Talos currently produces two presentation layers from the same scan data:
+
+### 1. Markdown report
+
+Best for:
+
+- saving audit artifacts,
+- attaching to issues,
+- sharing findings asynchronously.
+
+### 2. Structured JSON for the dashboard
+
+Best for:
+
+- live demos,
+- custom integrations,
+- front-end visualization,
+- future automation and pipelines.
+
+---
+
+## Known simplifications
+
+This version is intentionally focused and honest about its boundaries:
+
+- **Seed IDs are supplied, not discovered.**
+  Talos expects known-valid test identifiers for the current scenario.
+
+- **Adaptive generation is still phase-1 scoped.**
+  The current implementation supports deterministic refinement and optional
+  Anthropic-backed mutation, but it does not yet include long-horizon search,
+  cross-engagement learning, or reinforcement updates.
+
+- **Scoring uses known test-environment ground truth.**
+  It reasons from observable traces plus known order totals / allowed domains.
+
+- **The sample targets simulate side effects.**
+  They are for safe validation, not real-world damage.
+
+---
+
+## Testing
+
+Run the suite with:
 
 ```bash
-pip install -e ".[dev]"
 pytest tests/ -v
 ```
 
-The suite spins up both sample-agent servers as real subprocesses
-(`tests/conftest.py`), runs both adapters against them, and asserts parity
-at three levels: tool specs, single-exchange tool-call sequences, and full
-deduplicated scan findings.
+The tests spin up real sample-agent subprocesses and validate:
+
+- adapter parity,
+- graph parity,
+- full scan parity,
+- adaptive generation behavior,
+- dashboard HTML serving,
+- dashboard scan streaming,
+- end-to-end findings behavior.
+
+---
+
+## Who this is for
+
+Talos is useful for:
+
+- teams building AI agents with real tools,
+- security engineers reviewing agent deployments,
+- hackathon judges who want to see something concrete,
+- platform teams that need a repeatable "is this agent safe enough to ship?" workflow.
+
+---
+
+## The thesis in one line
+
+Every autonomous agent has a vein.
+
+**Talos finds it before your attacker does.**

@@ -12,6 +12,8 @@ import sys
 from talos.reporting.report import render_markdown_report
 from talos.scan_service import (
     ADAPTERS,
+    DEFAULT_GENERATION_STRATEGY,
+    GENERATION_STRATEGIES,
     build_agent,
     run_scan_pipeline,
 )
@@ -25,6 +27,8 @@ def run_scan(
     poisoned_order_ids: list[str] | None = None,
     attacker_email: str | None = None,
     repro_runs: int = 3,
+    generation_strategy: str = DEFAULT_GENERATION_STRATEGY,
+    attack_model: str = "claude-sonnet-4-5",
     verbose: bool = True,
 ) -> str:
     report, events = run_scan_pipeline(
@@ -34,6 +38,8 @@ def run_scan(
         poisoned_order_ids=poisoned_order_ids,
         attacker_email=attacker_email,
         repro_runs=repro_runs,
+        generation_strategy=generation_strategy,
+        attack_model=attack_model,
     )
     if verbose:
         for event in events:
@@ -43,7 +49,10 @@ def run_scan(
                 print(f"[2/5] Discovered {event.stats.tools_found} tools: {event.tool_names}")
             elif event.type == "attacks_generated":
                 classes = event.exploit_classes or []
-                print(f"[3/5] Generated {event.stats.attacks_total} attack instances across {len(classes)} exploit classes")
+                print(
+                    f"[3/5] Prepared {event.stats.attacks_total} base attack instances across "
+                    f"{len(classes)} exploit classes using {generation_strategy} mode"
+                )
             elif event.type == "completed":
                 successful = len(report.findings)
                 tested = report.stats.findings_tested
@@ -67,6 +76,17 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--seed-order-id", action="append", dest="seed_order_ids", help="Known-valid order id to test with (repeatable)")
     parser.add_argument("--poisoned-order-id", action="append", dest="poisoned_order_ids", help="Known-poisoned order id for indirect-injection templates (repeatable)")
     parser.add_argument("--attacker-email", default=None, help="Destination address used by exfiltration/injection templates")
+    parser.add_argument(
+        "--strategy",
+        default=DEFAULT_GENERATION_STRATEGY,
+        choices=list(GENERATION_STRATEGIES),
+        help="Attack generation mode: deterministic template-only or adaptive refinement.",
+    )
+    parser.add_argument(
+        "--attack-model",
+        default="claude-sonnet-4-5",
+        help="Model name to use for adaptive generation when ANTHROPIC_API_KEY is set.",
+    )
     parser.add_argument("--quiet", action="store_true")
     args = parser.parse_args(argv)
 
@@ -79,6 +99,8 @@ def main(argv: list[str] | None = None) -> int:
         poisoned_order_ids=args.poisoned_order_ids,
         attacker_email=args.attacker_email,
         repro_runs=args.repro_runs,
+        generation_strategy=args.strategy,
+        attack_model=args.attack_model,
         verbose=not args.quiet,
     )
     return 0

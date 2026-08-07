@@ -18,8 +18,10 @@ from pydantic import BaseModel, Field
 from talos.scan_service import (
     ADAPTERS,
     DEFAULT_ATTACKER_EMAIL,
+    DEFAULT_GENERATION_STRATEGY,
     DEFAULT_POISONED_ORDER_IDS,
     DEFAULT_SEED_ORDER_IDS,
+    GENERATION_STRATEGIES,
     iter_scan_progress,
 )
 
@@ -33,6 +35,8 @@ class ScanRequest(BaseModel):
     seed_order_ids: list[str] = Field(default_factory=lambda: list(DEFAULT_SEED_ORDER_IDS))
     poisoned_order_ids: list[str] = Field(default_factory=lambda: list(DEFAULT_POISONED_ORDER_IDS))
     repro_runs: int = 3
+    strategy: str = DEFAULT_GENERATION_STRATEGY
+    attack_model: str = "claude-sonnet-4-5"
 
 
 def _dashboard_html() -> str:
@@ -44,7 +48,13 @@ def _dashboard_html() -> str:
         "attacker_email": DEFAULT_ATTACKER_EMAIL,
         "seed_order_ids": ",".join(DEFAULT_SEED_ORDER_IDS),
         "poisoned_order_ids": ",".join(DEFAULT_POISONED_ORDER_IDS),
+        "strategy": DEFAULT_GENERATION_STRATEGY,
+        "attack_model": "claude-sonnet-4-5",
     }
+    strategy_options = "\n".join(
+        f'<option value="{name}"{" selected" if name == defaults["strategy"] else ""}>{name}</option>'
+        for name in GENERATION_STRATEGIES
+    )
     return f"""<!doctype html>
 <html lang="en">
 <head>
@@ -304,6 +314,14 @@ def _dashboard_html() -> str:
             <label for="poisoned_order_ids">Poisoned order IDs</label>
             <input id="poisoned_order_ids" name="poisoned_order_ids" type="text" value="{defaults["poisoned_order_ids"]}">
           </div>
+          <div class="field">
+            <label for="strategy">Attack strategy</label>
+            <select id="strategy" name="strategy">{strategy_options}</select>
+          </div>
+          <div class="field">
+            <label for="attack_model">Adaptive model</label>
+            <input id="attack_model" name="attack_model" type="text" value="{defaults["attack_model"]}">
+          </div>
         </div>
       </details>
     </section>
@@ -450,7 +468,9 @@ def _dashboard_html() -> str:
         adapter: document.getElementById("adapter").value,
         attacker_email: document.getElementById("attacker_email").value.trim(),
         seed_order_ids: parseList(document.getElementById("seed_order_ids").value),
-        poisoned_order_ids: parseList(document.getElementById("poisoned_order_ids").value)
+        poisoned_order_ids: parseList(document.getElementById("poisoned_order_ids").value),
+        strategy: document.getElementById("strategy").value,
+        attack_model: document.getElementById("attack_model").value.trim()
       }};
 
       try {{
@@ -520,6 +540,8 @@ def healthcheck() -> dict[str, str]:
 def run_scan(request: ScanRequest) -> StreamingResponse:
     if request.adapter not in ADAPTERS:
         raise HTTPException(status_code=422, detail=f"Unknown adapter '{request.adapter}'. Choices: {list(ADAPTERS)}")
+    if request.strategy not in GENERATION_STRATEGIES:
+        raise HTTPException(status_code=422, detail=f"Unknown strategy '{request.strategy}'. Choices: {list(GENERATION_STRATEGIES)}")
 
     def stream() -> Iterator[str]:
         try:
@@ -530,6 +552,8 @@ def run_scan(request: ScanRequest) -> StreamingResponse:
                 seed_order_ids=request.seed_order_ids,
                 poisoned_order_ids=request.poisoned_order_ids,
                 repro_runs=request.repro_runs,
+                generation_strategy=request.strategy,
+                attack_model=request.attack_model,
             ):
                 yield json.dumps(event.model_dump(mode="json")) + "\n"
         except Exception as exc:
