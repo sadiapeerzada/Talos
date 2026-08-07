@@ -20,6 +20,7 @@ def test_dashboard_root_serves_html():
     assert "Talos Dashboard" in response.text
     assert "Run scan" in response.text
     assert "Continuous monitoring" in response.text
+    assert "Cross-engagement learning" in response.text
     assert 'id="findings"' in response.text
 
 
@@ -57,6 +58,12 @@ def test_dashboard_scan_streams_progress_and_final_report(native_server_url):
     assert first_finding["summary"]
     assert first_finding["variants"][0]["messages"]
     assert first_finding["variants"][0]["evidence"]
+
+    learning_response = client.get("/api/learning/summary")
+    assert learning_response.status_code == 200
+    learning_summary = learning_response.json()
+    assert learning_summary["total_findings"] >= 1
+    assert "template_stats" in learning_summary
 
 
 def test_monitor_runs_recurring_scans_and_exposes_history(native_server_url):

@@ -19,12 +19,7 @@ from talos.scan_service import (
     DEFAULT_SEED_ORDER_IDS,
     run_scan_pipeline,
 )
-
-
-def _default_db_path() -> Path:
-    base = Path.home() / ".talos"
-    base.mkdir(parents=True, exist_ok=True)
-    return base / "dashboard.db"
+from talos.storage import default_db_path
 
 
 class MonitorConfig(BaseModel):
@@ -114,7 +109,7 @@ class _MonitorRecord:
 class MonitoringManager:
     def __init__(self, db_path: str | Path | None = None) -> None:
         self._lock = threading.Lock()
-        self._db_path = Path(db_path) if db_path is not None else _default_db_path()
+        self._db_path = Path(db_path) if db_path is not None else default_db_path()
         self._db_path.parent.mkdir(parents=True, exist_ok=True)
         self._monitors: dict[str, _MonitorRecord] = {}
         self._ensure_schema()

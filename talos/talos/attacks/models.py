@@ -37,6 +37,8 @@ class AttackContext:
     attacker_email: str = "collector@exfil-sink.example"
     generation_strategy: str = "template"
     attack_model: str = "claude-sonnet-4-5"
+    template_success_scores: dict[str, float] = field(default_factory=dict)
+    exploit_class_success_scores: dict[str, float] = field(default_factory=dict)
 
 
 class AttackInstance(BaseModel):

@@ -91,6 +91,11 @@ Given a target agent endpoint and an adapter, Talos:
    - Stores run history, latest reports, and alerts for the dashboard.
    - Makes drift visible when a target starts behaving differently over time.
 
+7. **Learns across engagements**
+   - Persists scan outcomes locally across CLI, dashboard, and monitoring runs.
+   - Builds template and exploit-class performance summaries over time.
+   - Feeds those learning hints back into future attack prioritization.
+
 ---
 
 ## Why this demos well
@@ -101,6 +106,7 @@ Talos is built for a live security demo, not just a static report:
 - **Web dashboard** for a hackathon-friendly visual experience
 - **Visible progress** as tools are discovered, attacks run, and findings land
 - **Continuous monitoring** for recurring scans and history, not just a one-shot run
+- **Cross-engagement learning** so Talos gets a local memory of what has been effective
 - **Deterministic sample agents** so the demo is reproducible every time
 - **Concrete outputs** with evidence, not vague "the model seemed unsafe"
 
@@ -278,6 +284,7 @@ The dashboard also exposes monitoring APIs for recurring scans:
 - `GET /api/monitors/{monitor_id}`
 - `POST /api/monitors/{monitor_id}/stop`
 - `GET /api/alerts`
+- `GET /api/learning/summary`
 
 These endpoints now persist monitor state, run history, and alerts to a local
 SQLite database for the dashboard.
@@ -311,6 +318,31 @@ Current scope:
 - alerts are currently surfaced through the dashboard/API rather than external delivery,
 - this is still designed for local/demo and single-node workflows,
 - there is no distributed worker system or webhook/email alert transport yet.
+
+---
+
+## Cross-engagement learning
+
+Phase 4 adds a local learning layer on top of the scan engine.
+
+What it does today:
+
+- records scored findings from scans into local SQLite storage,
+- tracks which templates and exploit classes succeed most often,
+- builds ranked summaries for the dashboard/API,
+- uses those learning hints to prioritize future attack batches.
+
+Why it matters:
+
+- Talos stops being purely stateless from run to run,
+- successful attack patterns become easier to revisit,
+- recurring testing becomes sharper over time even before full RL is added.
+
+Current scope:
+
+- learning is local to the operator's machine,
+- prioritization is score-based rather than model-trained,
+- there is no remote multi-tenant memory or reinforcement training loop yet.
 
 ---
 
@@ -516,6 +548,14 @@ Best for:
 - seeing recurring scan failures immediately,
 - surfacing local security drift without leaving the dashboard.
 
+### 5. Cross-engagement learning summary
+
+Best for:
+
+- understanding which exploit classes have been most productive,
+- seeing which templates consistently reproduce,
+- seeding future prioritization with evidence from previous runs.
+
 ---
 
 ## Known simplifications
@@ -528,7 +568,11 @@ This version is intentionally focused and honest about its boundaries:
 - **Adaptive generation is still phase-1 scoped.**
   The current implementation supports deterministic refinement and optional
   Anthropic-backed mutation, but it does not yet include long-horizon search,
-  cross-engagement learning, or reinforcement updates.
+  or reinforcement updates.
+
+- **Cross-engagement learning is heuristic today.**
+  Talos now persists and reuses local performance data, but it does not yet
+  train a learned policy or perform reinforcement learning over that history.
 
 - **Persistent monitoring is local-first.**
   State is persisted to a local SQLite store for the dashboard, but external
@@ -561,6 +605,7 @@ The tests spin up real sample-agent subprocesses and validate:
 - dashboard scan streaming,
 - monitoring lifecycle and run history,
 - persistent alert generation,
+- cross-engagement learning summary,
 - end-to-end findings behavior.
 
 ---

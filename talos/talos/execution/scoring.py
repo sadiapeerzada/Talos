@@ -46,6 +46,7 @@ class ScoredFinding(BaseModel):
     exploit_class: str
     name: str
     target_tool: str
+    origin: str = "template"
     outcome: str  # "success" | "partial" | "fail"
     severity: Severity = Severity.NONE
     data_exposure: int = 0
@@ -236,6 +237,7 @@ def score_attack(
         exploit_class=attack.exploit_class,
         name=attack.name,
         target_tool=attack.target_tool,
+        origin=attack.origin,
         outcome=overall_outcome,
         severity=severity,
         data_exposure=data_exposure,

@@ -15,6 +15,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
+from talos.learning import LearningStore, LearningSummary
 from talos.monitoring import AlertRecord, MonitorConfig, MonitorSnapshot, MonitoringManager
 from talos.scan_service import (
     ADAPTERS,
@@ -28,6 +29,7 @@ from talos.scan_service import (
 
 app = FastAPI(title="Talos Dashboard")
 monitoring_manager = MonitoringManager()
+learning_store = LearningStore()
 
 
 class ScanRequest(BaseModel):
@@ -259,6 +261,27 @@ def _dashboard_html() -> str:
       margin: 0 0 6px;
       font-size: 1rem;
     }}
+    .learning-grid {{
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 14px;
+    }}
+    .learning-card {{
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #fafafa;
+      padding: 14px;
+    }}
+    .learning-card h3 {{
+      margin: 0 0 10px;
+      font-size: 1rem;
+    }}
+    .learning-card ul {{
+      margin: 0;
+      padding-left: 18px;
+      color: var(--muted);
+    }}
     .finding {{
       border: 1px solid var(--border);
       border-radius: 14px;
@@ -454,6 +477,13 @@ def _dashboard_html() -> str:
       <p id="alerts-empty" class="monitor-empty">No alerts yet.</p>
       <div id="alerts-list" class="alerts-list hidden"></div>
     </section>
+
+    <section class="panel">
+      <h2 style="margin: 0 0 14px;">Cross-engagement learning</h2>
+      <p class="subtitle" style="margin: 0 0 16px;">Talos keeps local memory of what has worked across runs and uses it to prioritize future attacks.</p>
+      <div id="learning-summary" class="learning-grid hidden"></div>
+      <p id="learning-empty" class="monitor-empty">No learning data yet.</p>
+    </section>
   </div>
 
   <script>
@@ -475,6 +505,8 @@ def _dashboard_html() -> str:
     const monitorHistoryEmpty = document.getElementById("monitor-history-empty");
     const alertsEmpty = document.getElementById("alerts-empty");
     const alertsList = document.getElementById("alerts-list");
+    const learningSummary = document.getElementById("learning-summary");
+    const learningEmpty = document.getElementById("learning-empty");
     let activeMonitorId = null;
     let monitorPollTimer = null;
 
@@ -626,6 +658,7 @@ def _dashboard_html() -> str:
         findingsEmpty.classList.remove("hidden");
         findingsEmpty.textContent = "The scan stopped before any final results were produced.";
       }} finally {{
+        await refreshLearning().catch(() => {{}});
         runButton.disabled = false;
       }}
     }}
@@ -691,6 +724,39 @@ def _dashboard_html() -> str:
       `).join("");
     }}
 
+    function renderLearning(summary) {{
+      if (!summary || (summary.total_findings || 0) === 0) {{
+        learningSummary.innerHTML = "";
+        learningSummary.classList.add("hidden");
+        learningEmpty.classList.remove("hidden");
+        return;
+      }}
+
+      const renderList = (items) => items.map((item) => `
+        <li><strong>${{escapeHtml(item.key)}}</strong> — score ${{escapeHtml(item.weighted_score)}}, success ${{escapeHtml(Math.round((item.success_rate || 0) * 100))}}%</li>
+      `).join("");
+
+      learningEmpty.classList.add("hidden");
+      learningSummary.classList.remove("hidden");
+      learningSummary.innerHTML = `
+        <div class="learning-card">
+          <h3>Overview</h3>
+          <div class="history-meta">
+            <span>Observed findings: <strong>${{summary.total_findings}}</strong></span>
+            <span>Successful findings: <strong>${{summary.successful_findings}}</strong></span>
+          </div>
+        </div>
+        <div class="learning-card">
+          <h3>Top exploit classes</h3>
+          <ul>${{renderList(summary.exploit_class_stats || [])}}</ul>
+        </div>
+        <div class="learning-card">
+          <h3>Top templates</h3>
+          <ul>${{renderList(summary.template_stats || [])}}</ul>
+        </div>
+      `;
+    }}
+
     function updateMonitorUI(snapshot) {{
       if (!snapshot) return;
       activeMonitorId = snapshot.active ? snapshot.monitor_id : activeMonitorId === snapshot.monitor_id ? null : activeMonitorId;
@@ -744,6 +810,15 @@ def _dashboard_html() -> str:
       renderAlerts(alerts);
     }}
 
+    async function refreshLearning() {{
+      const response = await fetch("/api/learning/summary");
+      if (!response.ok) {{
+        throw new Error(`Learning fetch failed with status ${{response.status}}`);
+      }}
+      const summary = await response.json();
+      renderLearning(summary);
+    }}
+
     async function startMonitor() {{
       startMonitorButton.disabled = true;
       const payload = {{
@@ -767,6 +842,7 @@ def _dashboard_html() -> str:
         activeMonitorId = snapshot.monitor_id;
         updateMonitorUI(snapshot);
         await refreshAlerts(activeMonitorId);
+        await refreshLearning();
         if (monitorPollTimer) clearInterval(monitorPollTimer);
         monitorPollTimer = setInterval(pollMonitor, 2000);
         await pollMonitor();
@@ -794,6 +870,7 @@ def _dashboard_html() -> str:
         activeMonitorId = null;
         startMonitorButton.disabled = false;
         await refreshAlerts();
+        await refreshLearning();
       }} catch (error) {{
         monitorStatusText.textContent = "Failed to stop monitor.";
         monitorStatusSubtext.textContent = error.message;
@@ -804,6 +881,7 @@ def _dashboard_html() -> str:
     startMonitorButton.addEventListener("click", startMonitor);
     stopMonitorButton.addEventListener("click", stopMonitor);
     refreshAlerts().catch(() => {{}});
+    refreshLearning().catch(() => {{}});
   </script>
 </body>
 </html>"""
@@ -858,6 +936,11 @@ def list_monitors() -> list[MonitorSnapshot]:
 @app.get("/api/alerts")
 def list_alerts(monitor_id: str | None = None) -> list[AlertRecord]:
     return monitoring_manager.list_alerts(monitor_id=monitor_id)
+
+
+@app.get("/api/learning/summary")
+def get_learning_summary() -> LearningSummary:
+    return learning_store.get_summary()
 
 
 @app.post("/api/monitors")
