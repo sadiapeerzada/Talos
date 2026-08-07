@@ -18,6 +18,7 @@
 [Quick start](#quick-start) ·
 [Dashboard](#web-dashboard) ·
 [Monitoring](#continuous-monitoring) ·
+[Capability matrix](#capability-matrix) ·
 [Architecture](#architecture) ·
 [Exploit classes](#exploit-classes) ·
 [Testing](#testing)
@@ -54,6 +55,25 @@ That means Talos targets the real exploit surface:
 
 Talos is built to audit the thing you actually shipped: the live agent, its
 tool graph, its data flow, and its side effects.
+
+---
+
+## At a glance
+
+Talos is a local-first security system for AI agents that now includes:
+
+- **live black-box scanning** against agent endpoints,
+- **tool-graph discovery** from adapter-normalized tool metadata,
+- **35 attack templates across 7 exploit classes**,
+- **adaptive attack refinement** with offline-safe fallback behavior,
+- **FastAPI dashboard** for live demo execution,
+- **continuous monitoring** with recurring full scans,
+- **persistent local alerts** for drift and failures,
+- **cross-engagement learning** that improves future attack prioritization.
+
+If you need one sentence for a pitch:
+
+> **Talos is a red-team copilot for AI agents: it discovers the tool graph, attacks the real permission surface, and turns the result into reproducible security evidence.**
 
 ---
 
@@ -98,6 +118,46 @@ Given a target agent endpoint and an adapter, Talos:
 
 ---
 
+## Capability matrix
+
+| Capability | Current status | What it gives you |
+|---|---|---|
+| Tool discovery + graph inference | **Implemented** | Maps tool surfaces, side effects, and likely privilege boundaries |
+| Template attack generation | **Implemented** | Reliable baseline attack coverage across known exploit classes |
+| Adaptive attack refinement | **Implemented** | Follow-up variants generated from previous run outcomes |
+| LangChain + native adapters | **Implemented** | Works across different agent orchestration styles |
+| Markdown reporting | **Implemented** | Audit-friendly artifact with repro steps and evidence |
+| Live dashboard | **Implemented** | Hackathon/demo-friendly visual scan runner |
+| Continuous monitoring | **Implemented** | Recurring scans with local run history |
+| Persistent alerts | **Implemented** | SQLite-backed alert visibility for failures and drift |
+| Cross-engagement learning | **Implemented** | Local memory of productive templates and exploit classes |
+| External alert delivery | **Planned** | Webhooks/email/incident integration |
+| Longer-horizon planning | **Planned** | Multi-step strategic attack search beyond current refinement loop |
+| RL-style policy improvement | **Planned** | Learned prioritization beyond heuristic scoring |
+
+---
+
+## Why Talos is different
+
+Most AI security demos stop at prompt abuse in isolation.
+
+Talos is different because it focuses on the moment when an agent becomes
+operationally dangerous:
+
+- when a prompt can trigger a **refund**,
+- when retrieved content can trigger an **email**,
+- when weak policy handling can cross into a **high-impact tool call**,
+- when "helpful automation" turns into **real financial or data loss**.
+
+In other words, Talos is not trying to win a benchmark. It is trying to answer:
+
+> **What is the fastest believable path from attacker-controlled text to a real side effect in this deployed agent?**
+
+That framing is what makes the output useful to builders, judges, and security
+engineers.
+
+---
+
 ## Why this demos well
 
 Talos is built for a live security demo, not just a static report:
@@ -115,6 +175,31 @@ If you are showing this on stage, the audience can watch Talos go from:
 **target URL -> tool graph -> attack execution -> critical finding**
 
 in one flow.
+
+---
+
+## Hackathon demo script
+
+If you are presenting Talos live, a crisp flow is:
+
+1. **Start the sample targets** to show that Talos works against real running services.
+2. **Open the dashboard** with `talos-dashboard`.
+3. **Run a one-shot scan** against the native or LangChain target.
+4. **Call out visible progress**:
+   - tools discovered,
+   - attacks executed,
+   - critical/high counts changing,
+   - findings appearing with evidence.
+5. **Open a finding** and show:
+   - the exact attacker messages,
+   - the tool-level evidence,
+   - the remediation text.
+6. **Switch to monitoring mode** and start recurring scans.
+7. **Show learning + alerts** to explain how Talos improves over time and watches for drift.
+
+That gives you a complete story arc:
+
+**discover -> attack -> prove -> monitor -> learn**
 
 ---
 
@@ -227,6 +312,18 @@ python scan.py --target http://localhost:8001/agent --adapter native
 
 Each run writes `report_<adapter>.md` unless you override it with `--out`.
 
+### Recommended first run
+
+```bash
+talos-scan \
+  --target http://localhost:8001/agent \
+  --adapter native \
+  --strategy adaptive \
+  --repro-runs 1
+```
+
+That gives a fast local demo while still showing adaptive behavior.
+
 ---
 
 ## Web dashboard
@@ -288,6 +385,12 @@ The dashboard also exposes monitoring APIs for recurring scans:
 
 These endpoints now persist monitor state, run history, and alerts to a local
 SQLite database for the dashboard.
+
+By default, the local dashboard/runtime data store lives under:
+
+```text
+~/.talos/dashboard.db
+```
 
 ---
 
@@ -405,6 +508,10 @@ Talos currently ships with 7 exploit classes:
 The current implementation ships with a local library of 35 attack templates
 distributed across these exploit classes.
 
+These classes are intentionally centered on **agent-specific failure modes**
+rather than generic model-safety categories. The point is to capture attacks
+that matter once an agent is connected to tools, data, and business actions.
+
 ---
 
 ## Architecture
@@ -455,6 +562,7 @@ tests/                  End-to-end and parity tests
 - **Framework-agnostic**: Adapters isolate wire-format differences.
 - **Reproducible**: Repeated attack execution feeds reproducibility scoring.
 - **Additive surfaces**: CLI and dashboard reuse the same underlying scan engine.
+- **Local-first state**: monitoring, alerts, and learning persist without requiring cloud infrastructure.
 
 ---
 
@@ -511,6 +619,29 @@ steps**.
 
 ---
 
+## What a strong finding looks like
+
+A useful Talos finding is not just "the agent looked unsafe."
+
+It contains:
+
+- the **exploit class**,
+- the **target tool**,
+- the **severity**,
+- the **reproducibility rate**,
+- the **exact attacker prompts**,
+- the **observable tool-call evidence**,
+- and a **remediation direction** tied to the failure mode.
+
+That makes the output suitable for:
+
+- engineering handoff,
+- security review,
+- demo explanation,
+- future regression monitoring.
+
+---
+
 ## Report outputs
 
 Talos currently produces two presentation layers from the same scan data:
@@ -555,6 +686,29 @@ Best for:
 - understanding which exploit classes have been most productive,
 - seeing which templates consistently reproduce,
 - seeding future prioritization with evidence from previous runs.
+
+---
+
+## Roadmap
+
+### Already implemented
+
+- live scan engine
+- dual adapters
+- structured reporting
+- interactive dashboard
+- adaptive refinement
+- recurring monitoring
+- persistent local alerts
+- cross-engagement learning
+
+### Next likely steps
+
+- **external alert delivery** via webhook/email/incident systems
+- **longer-horizon adaptive planning** across multiple rounds of attack selection
+- **richer exploit memory** with stronger ranking and clustering
+- **multi-node or team workflows** beyond a single local operator
+- **certification-style reporting** for repeatable agent-security review
 
 ---
 
