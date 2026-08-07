@@ -2,26 +2,17 @@
 Attack-generation engine.
 
 `generate_next_round` is deliberately the ONLY function the rest of the
-pipeline calls to get attacks to try. In this phase it just walks the local
-template library (talos/attacks/templates.py) and pulls the next untried,
-applicable batch -- no network calls, no LLM, fully offline and
-deterministic.
-
-THE EXTENSION SEAM: a later phase can replace the body of this function
-with something that calls the Anthropic API to mutate/refine payloads
-based on `previous_results` (e.g. "this direct-injection phrasing got
-refused, try a variant that frames it as a system message instead", or
-"class B succeeded on lookup_order -- try the same directive style against
-search_kb too") -- as long as the new implementation still returns
-`list[AttackInstance]` given `(previous_results, ctx)`, nothing in
-execution/scoring/reporting needs to change. That's the whole point of
-routing everything through this one function.
+pipeline calls to get attacks to try. It still supports the original
+deterministic local-template flow, but now also supports an optional
+adaptive refinement mode that can synthesize follow-up variants from prior
+execution results.
 """
 
 from __future__ import annotations
 
 from typing import Any, Optional
 
+from talos.attacks.adaptive import build_adaptive_refinements
 from talos.attacks.models import AttackContext, AttackInstance
 from talos.attacks.templates import ALL_TEMPLATES
 
@@ -50,14 +41,26 @@ def generate_next_round(
     ctx: the discovered tool graph + seed data attacks are instantiated
         against.
     """
-    already_tried = {tid for r in (previous_results or []) if (tid := _extract_template_id(r))}
-
-    candidates = [t for t in ALL_TEMPLATES if t.id not in already_tried and t.applies(ctx)]
-    batch = candidates[:batch_size]
-
     instances: list[AttackInstance] = []
-    for template in batch:
+    already_tried = {tid for r in (previous_results or []) if (tid := _extract_template_id(r))}
+    candidates = [t for t in ALL_TEMPLATES if t.id not in already_tried and t.applies(ctx)]
+
+    adaptive_quota = 0
+    if ctx.generation_strategy == "adaptive" and previous_results:
+        adaptive_quota = min(2, batch_size)
+
+    base_quota = max(0, batch_size - adaptive_quota)
+    for template in candidates[:base_quota]:
         instances.extend(template.instantiate(ctx))
+
+    if ctx.generation_strategy == "adaptive" and previous_results:
+        adaptive_variants = build_adaptive_refinements(
+            ctx=ctx,
+            previous_results=previous_results,
+            seen_template_ids=already_tried,
+        )
+        instances.extend(adaptive_variants[:adaptive_quota or batch_size])
+
     return instances
 
 

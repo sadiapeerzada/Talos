@@ -14,6 +14,8 @@ EXPLOIT_CLASSES = (
     "permission_escalation",
     "data_exfiltration",
     "goal_hijacking",
+    "authority_spoofing",
+    "policy_shadowing",
 )
 
 
@@ -33,6 +35,8 @@ class AttackContext:
     seed_order_ids: list[str] = field(default_factory=lambda: ["1001"])
     poisoned_order_ids: list[str] = field(default_factory=lambda: ["1002"])
     attacker_email: str = "collector@exfil-sink.example"
+    generation_strategy: str = "template"
+    attack_model: str = "claude-sonnet-4-5"
 
 
 class AttackInstance(BaseModel):
@@ -42,6 +46,7 @@ class AttackInstance(BaseModel):
     target_tool: str
     messages: list[str] = Field(default_factory=list)  # sent in sequence; len 1 or 2
     notes: str = ""
+    origin: str = "template"
 
 
 @dataclass
