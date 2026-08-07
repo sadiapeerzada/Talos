@@ -17,6 +17,7 @@
 [Live demo flow](#live-demo-flow) ·
 [Quick start](#quick-start) ·
 [Dashboard](#web-dashboard) ·
+[Real target + before/after](#a-real-non-fixture-target-the-groq-backed-agent) ·
 [Monitoring](#continuous-monitoring) ·
 [Architecture](#architecture) ·
 [Exploit classes](#exploit-classes) ·
@@ -442,10 +443,116 @@ This is enforced by the test suite through:
 
 ---
 
+## A real, non-fixture target: the Groq-backed agent
+
+The two sample agents above are useful for proving the harness is correct,
+but they share one rule-based decision function on purpose -- which invites a
+fair question: does Talos actually generalize, or is it just tuned to detect
+its own fixtures?
+
+`talos/sample_agents/real_agent_server.py` answers that. It's a genuinely
+independent target: a real LLM (via the free [Groq API](https://console.groq.com))
+makes the tool-calling decisions, using its own system prompt, that Talos was
+never written against.
+
+### Get a free Groq API key
+
+1. Go to [console.groq.com/keys](https://console.groq.com/keys) and sign up
+   (free, no credit card).
+2. Create an API key.
+3. Export it in your shell:
+
+   ```bash
+   export GROQ_API_KEY=your_key_here
+   ```
+
+### Run the vulnerable version
+
+```bash
+python -m talos.sample_agents.real_agent_server --port 8002
+```
+
+This target has no guardrails beyond whatever the model does on its own --
+same posture as the built-in vulnerable sample agents.
+
+### Scan it
+
+Same as any other target -- use `--adapter native` since it speaks the same
+HTTP contract as `native_server.py`:
+
+```bash
+talos-scan --target http://localhost:8002/agent --adapter native
+```
+
+or point the dashboard's Target URL field at `http://localhost:8002/agent`
+with adapter `native`.
+
+Because this target is backed by a real model instead of a scripted brain,
+results may vary run to run -- that's expected, and is itself evidence this
+isn't a hardcoded fixture.
+
+---
+
+## Before / after: proving Talos validates a fix, not just a break
+
+`real_agent_server.py` also has a `--hardened` mode, which demonstrates that
+Talos is useful for *validating a fix*, not only for finding a break.
+
+```bash
+python -m talos.sample_agents.real_agent_server --port 8003 --hardened
+```
+
+Hardened mode adds two layers of defense on top of the same underlying model
+and tools:
+
+1. **A hardened system prompt** telling the model to treat all tool output
+   (order notes, KB articles, etc.) as untrusted data, never as instructions,
+   and to require explicit fresh confirmation before a sensitive action.
+2. **A deterministic policy backstop** (`talos/sample_agents/policy.py`) that
+   holds even if the model doesn't fully comply:
+   - refund amounts are clipped to the order's real total,
+   - emails are only ever sent to an allow-listed domain,
+   - `issue_refund` / `send_email` are refused outright unless the human's
+     own current message explicitly authorized that exact action, with no
+     prior read step in the same exchange.
+
+### Run the before/after demo
+
+```bash
+# terminal 1 -- vulnerable
+python -m talos.sample_agents.real_agent_server --port 8002
+
+# terminal 2 -- hardened
+python -m talos.sample_agents.real_agent_server --port 8003 --hardened
+
+# terminal 3 -- dashboard
+talos-dashboard
+```
+
+In the dashboard:
+
+1. Set **Run label** to `before`, target to `http://localhost:8002/agent`,
+   adapter `native`, and run a scan.
+2. Set **Run label** to `after`, target to `http://localhost:8003/agent`,
+   same adapter, and run a scan.
+3. Scroll to the **Before / after comparison** panel -- it tracks every
+   labeled run from this browser session and shows the delta in
+   critical/high/medium/low findings between them.
+
+You should see critical/high findings drop sharply (often to zero) on the
+hardened target, while the underlying model and tools are otherwise the same.
+
+The policy backstop is independently covered by
+`tests/test_real_agent_hardening.py`, which asserts these guarantees hold
+without needing a live API call.
+
+---
+
 ## Why the current demo is deterministic
 
-The sample agents use a rule-based decision engine instead of a real external
-LLM. That is intentional:
+The two built-in sample agents (`native_server.py` / `langchain_server.py`)
+use a rule-based decision engine instead of a real external LLM. That is
+intentional:
 
 - no API key requirement,
 - no inference cost,
