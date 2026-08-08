@@ -12,10 +12,11 @@ from typing import Iterator
 
 import uvicorn
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import HTMLResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, PlainTextResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
 from talos.monitoring import MonitorConfig, MonitorSnapshot, MonitoringManager
+from talos.reporting.report import ScanReport, render_markdown_report
 from talos.scan_service import (
     ADAPTERS,
     DEFAULT_ATTACKER_EMAIL,
@@ -592,9 +593,13 @@ def _dashboard_html() -> str:
       </div>
       <div class="hero-stats">
         <div class="hero-stat wow">
+          <div class="hero-stat-label">Risk score</div>
+          <div id="hero-risk" class="hero-stat-value">0<span style="font-size: 1rem; color: var(--muted);">/100</span></div>
+          <div class="hero-stat-sub" id="hero-risk-sub">no scan run yet</div>
+        </div>
+        <div class="hero-stat">
           <div class="hero-stat-label">Total findings</div>
           <div id="hero-total" class="hero-stat-value">0</div>
-          <div class="hero-stat-sub" id="hero-total-sub">no scan run yet</div>
         </div>
         <div class="hero-stat">
           <div class="hero-stat-label">Tools found</div>
@@ -603,10 +608,6 @@ def _dashboard_html() -> str:
         <div class="hero-stat">
           <div class="hero-stat-label">Attacks run</div>
           <div id="attacks-run" class="hero-stat-value">0/0</div>
-        </div>
-        <div class="hero-stat">
-          <div class="hero-stat-label">Success rate</div>
-          <div id="success-rate" class="hero-stat-value">0%</div>
         </div>
       </div>
       <div class="stats" style="margin-top: 14px;">
@@ -630,7 +631,10 @@ def _dashboard_html() -> str:
     </section>
 
     <section class="panel">
-      <div class="panel-title">Findings</div>
+      <div class="panel-title" style="display: flex; justify-content: space-between; align-items: center;">
+        <span>Findings</span>
+        <button id="export-report-button" type="button" class="button-secondary" style="width: auto; min-width: 0; padding: 8px 14px; font-size: 0.82rem;" disabled>Export report (.md)</button>
+      </div>
       <p id="findings-empty" class="findings-empty">No findings yet. Run a scan to populate this list.</p>
       <div id="findings-skeleton" class="skeleton hidden">
         <div class="skeleton-row"></div>
@@ -646,7 +650,7 @@ def _dashboard_html() -> str:
       <div id="runs-empty" class="runs-empty">No labeled runs yet. Give a run a label and run a scan to start tracking it here.</div>
       <table id="runs-table" class="compare-table hidden">
         <thead>
-          <tr><th>Label</th><th>Target</th><th>Critical</th><th>High</th><th>Medium</th><th>Low</th><th>Total</th></tr>
+          <tr><th>Label</th><th>Target</th><th>Risk</th><th>Critical</th><th>High</th><th>Medium</th><th>Low</th><th>Total</th></tr>
         </thead>
         <tbody id="runs-tbody"></tbody>
       </table>
@@ -689,9 +693,10 @@ def _dashboard_html() -> str:
     const statusSubtext = document.getElementById("status-subtext");
     const toolsFound = document.getElementById("tools-found");
     const attacksRun = document.getElementById("attacks-run");
-    const successRate = document.getElementById("success-rate");
+    const heroRisk = document.getElementById("hero-risk");
+    const heroRiskSub = document.getElementById("hero-risk-sub");
     const heroTotal = document.getElementById("hero-total");
-    const heroTotalSub = document.getElementById("hero-total-sub");
+    const exportReportButton = document.getElementById("export-report-button");
     const criticalCount = document.getElementById("critical-count");
     const highCount = document.getElementById("high-count");
     const mediumCount = document.getElementById("medium-count");
@@ -757,7 +762,6 @@ def _dashboard_html() -> str:
       if (!stats) return;
       toolsFound.textContent = String(stats.tools_found ?? 0);
       attacksRun.textContent = `${{stats.attacks_run ?? 0}}/${{stats.attacks_total ?? 0}}`;
-      const total = stats.attacks_total ? Math.round(((stats.attacks_run ?? 0) / stats.attacks_total) * 100) : 0;
       const counts = report ? severityCounts(report) : {{
         critical: stats.critical ?? 0, high: stats.high ?? 0, medium: 0, low: 0
       }};
@@ -767,13 +771,13 @@ def _dashboard_html() -> str:
       lowCount.textContent = String(counts.low ?? 0);
       const findingsTotal = (report?.findings || []).length;
       heroTotal.textContent = String(findingsTotal);
-      heroTotal.className = "hero-stat-value" + (counts.critical > 0 ? " crit" : counts.high > 0 ? " high" : "");
-      heroTotalSub.textContent = findingsTotal
+
+      const risk = report?.stats?.risk_score ?? stats.risk_score ?? 0;
+      heroRisk.innerHTML = `${{risk}}<span style="font-size: 1rem; color: var(--muted);">/100</span>`;
+      heroRisk.className = "hero-stat-value" + (risk >= 60 ? " crit" : risk >= 25 ? " high" : "");
+      heroRiskSub.textContent = findingsTotal
         ? `${{counts.critical || 0}} critical, ${{counts.high || 0}} high`
         : "no findings yet";
-      const attackTotal = stats.attacks_total || 0;
-      const successPct = attackTotal ? Math.round((findingsTotal / attackTotal) * 100) : 0;
-      successRate.textContent = `${{successPct}}%`;
     }}
 
     function badgeClass(severity) {{
@@ -901,10 +905,17 @@ def _dashboard_html() -> str:
           const arrow = val < prevVal ? "&darr;" : val > prevVal ? "&uarr;" : "";
           return `<span>${{val}}</span> <span class="${{cls}}">${{arrow}}</span>`;
         }};
+        const riskCell = (() => {{
+          if (!prev) return `<strong>${{run.risk}}</strong>`;
+          const cls = deltaClass(prev.risk, run.risk);
+          const arrow = run.risk < prev.risk ? "&darr;" : run.risk > prev.risk ? "&uarr;" : "";
+          return `<strong>${{run.risk}}</strong> <span class="${{cls}}">${{arrow}}</span>`;
+        }})();
         return `
           <tr>
             <td class="label-cell">${{escapeHtml(run.label)}}</td>
             <td><code>${{escapeHtml(run.target)}}</code></td>
+            <td>${{riskCell}}</td>
             <td>${{cell("critical")}}</td>
             <td>${{cell("high")}}</td>
             <td>${{cell("medium")}}</td>
@@ -922,9 +933,43 @@ def _dashboard_html() -> str:
         label,
         target,
         counts,
+        risk: report?.stats?.risk_score ?? 0,
         total: (report?.findings || []).length
       }});
       renderRunsTable();
+    }}
+
+    let latestReport = null;
+
+    async function exportReport() {{
+      if (!latestReport) return;
+      exportReportButton.disabled = true;
+      exportReportButton.textContent = "Exporting...";
+      try {{
+        const response = await fetch("/api/reports/markdown", {{
+          method: "POST",
+          headers: {{ "Content-Type": "application/json" }},
+          body: JSON.stringify(latestReport)
+        }});
+        if (!response.ok) throw new Error(`Export failed with status ${{response.status}}`);
+        const blob = await response.blob();
+        const disposition = response.headers.get("Content-Disposition") || "";
+        const match = disposition.match(/filename="?([^"]+)"?/);
+        const filename = match ? match[1] : "talos-report.md";
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+      }} catch (error) {{
+        statusSubtext.textContent = `Export failed: ${{error.message}}`;
+      }} finally {{
+        exportReportButton.disabled = false;
+        exportReportButton.textContent = "Export report (.md)";
+      }}
     }}
 
     async function runScan(event) {{
@@ -975,6 +1020,8 @@ def _dashboard_html() -> str:
             setStats(eventData.stats, eventData.report || lastReport);
             if (eventData.report) {{
               lastReport = eventData.report;
+              latestReport = eventData.report;
+              exportReportButton.disabled = false;
               renderFindings(eventData.report);
             }}
             if (eventData.type === "error") {{
@@ -1049,8 +1096,11 @@ def _dashboard_html() -> str:
           attacks_run: snapshot.latest_report.stats.attack_templates_run,
           attacks_total: snapshot.latest_report.stats.attack_templates_run,
           critical: snapshot.latest_report.stats.severity_counts.critical,
-          high: snapshot.latest_report.stats.severity_counts.high
+          high: snapshot.latest_report.stats.severity_counts.high,
+          risk_score: snapshot.latest_report.stats.risk_score
         }}, snapshot.latest_report);
+        latestReport = snapshot.latest_report;
+        exportReportButton.disabled = false;
         renderFindings(snapshot.latest_report);
       }}
     }}
@@ -1127,6 +1177,7 @@ def _dashboard_html() -> str:
     }}
 
     form.addEventListener("submit", runScan);
+    exportReportButton.addEventListener("click", exportReport);
     startMonitorButton.addEventListener("click", startMonitor);
     stopMonitorButton.addEventListener("click", stopMonitor);
   </script>
@@ -1137,6 +1188,22 @@ def _dashboard_html() -> str:
 @app.get("/", response_class=HTMLResponse)
 def dashboard_home() -> str:
     return _dashboard_html()
+
+
+@app.post("/api/reports/markdown")
+def export_report_markdown(report: ScanReport) -> PlainTextResponse:
+    """Render a previously-streamed ScanReport (as the dashboard already has
+    it client-side from a completed scan) back into the same Markdown format
+    the CLI writes to disk, as a downloadable vulnerability disclosure doc.
+    Stateless by design -- the client sends back the report it already has,
+    so no server-side scan history/database is needed for this to work."""
+    markdown = render_markdown_report(report)
+    filename = f"talos-report-{report.adapter}-{int(time.time())}.md"
+    return PlainTextResponse(
+        content=markdown,
+        media_type="text/markdown",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @app.get("/healthz")

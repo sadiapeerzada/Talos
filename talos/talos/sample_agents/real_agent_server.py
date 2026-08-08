@@ -1,18 +1,21 @@
 """
 Sample "real" customer-service agent -- backed by an actual external LLM
-(Groq's free API) instead of the deterministic rule-based fixture used by
-native_server.py / langchain_server.py.
+instead of the deterministic rule-based fixture used by native_server.py /
+langchain_server.py.
 
 This exists to prove Talos generalizes: it wasn't written against this
 agent's prompt or decision logic, so a scan finding something here is
 evidence Talos works on targets it has never seen, not just on its own
-fixtures.
+fixtures. Because the brain talks to any OpenAI-compatible endpoint (see
+groq_brain.py), the SAME scan can be repeated against Groq, OpenAI, or a
+fully local Ollama model with nothing but a --provider flag change --
+further evidence Talos isn't tuned to one vendor's quirks either.
 
 Two modes:
-  --hardened not set : vulnerable mode. Uses GroqBrain directly. Whatever
-                        the model decides is executed as-is (same posture
-                        as the built-in vulnerable sample agents).
-  --hardened set      : hardened mode. Wraps GroqBrain in
+  --hardened not set : vulnerable mode. Uses the raw LLM brain directly.
+                        Whatever the model decides is executed as-is (same
+                        posture as the built-in vulnerable sample agents).
+  --hardened set      : hardened mode. Wraps the LLM brain in
                         PolicyEnforcingBrain (see policy.py), which adds a
                         hardened system prompt AND a deterministic
                         backstop: refund amounts are capped to the real
@@ -20,13 +23,19 @@ Two modes:
                         never sent, and sensitive actions require a fresh,
                         explicit confirmation.
 
-Setup:
-    Get a free Groq API key at https://console.groq.com/keys
-    export GROQ_API_KEY=your_key_here
+Setup (pick one provider):
+    groq   (default, free, cloud) -- https://console.groq.com/keys
+        export GROQ_API_KEY=your_key_here
+    openai (paid, cloud)          -- https://platform.openai.com/api-keys
+        export OPENAI_API_KEY=your_key_here
+    ollama (free, fully local)    -- https://ollama.com/download
+        ollama pull llama3.1 && ollama serve   # no API key needed
 
 Run:
     python -m talos.sample_agents.real_agent_server --port 8002
     python -m talos.sample_agents.real_agent_server --port 8003 --hardened
+    python -m talos.sample_agents.real_agent_server --port 8004 --provider openai
+    python -m talos.sample_agents.real_agent_server --port 8005 --provider ollama --model llama3.1
 
 Endpoints (identical contract to native_server.py, so it plugs straight
 into the existing NativeAdapter / scan_service.py / dashboard.py / CLI with
@@ -48,7 +57,7 @@ from pydantic import BaseModel
 
 from talos.sample_agents.data import AuditLog
 from talos.sample_agents.exchange import run_exchange
-from talos.sample_agents.groq_brain import DEFAULT_GROQ_MODEL, GroqBrain
+from talos.sample_agents.groq_brain import DEFAULT_PROVIDER, PROVIDER_PRESETS, LLMBrain
 from talos.sample_agents.policy import PolicyEnforcingBrain
 from talos.sample_agents.brain import Brain, Turn
 from talos.sample_agents.tools import ToolDefinition, make_tool_definitions
@@ -56,23 +65,24 @@ from talos.sample_agents.tools import ToolDefinition, make_tool_definitions
 AUDIT_LOG = AuditLog()
 TOOL_DEFS: list[ToolDefinition] = make_tool_definitions(AUDIT_LOG)
 
-app = FastAPI(title="Talos sample agent (real / Groq-backed)")
+app = FastAPI(title="Talos sample agent (real / LLM-backed)")
 
-# Populated in main() once we know --hardened / --model from argv, but also
-# built eagerly here with defaults so `uvicorn talos.sample_agents.real_agent_server:app`
-# works directly too.
+# Populated in main() once we know --hardened / --provider / --model from
+# argv, but also built eagerly here with defaults so
+# `uvicorn talos.sample_agents.real_agent_server:app` works directly too.
 _BRAIN: Optional[Brain] = None
+_META: dict[str, Any] = {"provider": DEFAULT_PROVIDER, "model": None, "hardened": False}
 
 
-def _build_brain(hardened: bool, model: str) -> Brain:
-    groq = GroqBrain(model=model, hardened=hardened, tool_defs=TOOL_DEFS)
-    return PolicyEnforcingBrain(groq) if hardened else groq
+def _build_brain(hardened: bool, provider: str, model: Optional[str]) -> Brain:
+    llm = LLMBrain(provider=provider, model=model, hardened=hardened, tool_defs=TOOL_DEFS)
+    return PolicyEnforcingBrain(llm) if hardened else llm
 
 
 def get_brain() -> Brain:
     global _BRAIN
     if _BRAIN is None:
-        _BRAIN = _build_brain(hardened=False, model=DEFAULT_GROQ_MODEL)
+        _BRAIN = _build_brain(hardened=False, provider=DEFAULT_PROVIDER, model=None)
     return _BRAIN
 
 
@@ -142,11 +152,12 @@ def _reset() -> dict[str, Any]:
 @app.get("/agent/_meta")
 def _meta() -> dict[str, Any]:
     """Small introspection endpoint for the dashboard/demo to show which
-    mode this target is running in."""
+    mode and provider this target is running in."""
     brain = get_brain()
     return {
         "hardened": isinstance(brain, PolicyEnforcingBrain),
-        "backend": "groq",
+        "provider": _META["provider"],
+        "model": _META["model"],
     }
 
 
@@ -154,23 +165,35 @@ def main(argv: Optional[list[str]] = None) -> int:
     import uvicorn
 
     parser = argparse.ArgumentParser(
-        description="Groq-backed Talos sample agent (real / hardened demo target)."
+        description="Real LLM-backed Talos sample agent (real / hardened demo target)."
     )
     parser.add_argument("--port", type=int, default=8002)
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--hardened", action="store_true", help="Enable the policy-enforcement backstop.")
-    parser.add_argument("--model", default=DEFAULT_GROQ_MODEL, help="Groq model name.")
+    parser.add_argument(
+        "--provider",
+        default=DEFAULT_PROVIDER,
+        choices=list(PROVIDER_PRESETS),
+        help="Which OpenAI-compatible provider to use.",
+    )
+    parser.add_argument("--model", default=None, help="Model name override (defaults to the provider's preset).")
     args = parser.parse_args(argv)
 
-    global _BRAIN
+    global _BRAIN, _META
     try:
-        _BRAIN = _build_brain(hardened=args.hardened, model=args.model)
+        _BRAIN = _build_brain(hardened=args.hardened, provider=args.provider, model=args.model)
     except RuntimeError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
 
+    resolved_model = args.model or PROVIDER_PRESETS[args.provider].default_model
+    _META = {"provider": args.provider, "model": resolved_model, "hardened": args.hardened}
+
     mode = "HARDENED" if args.hardened else "VULNERABLE"
-    print(f"Starting real_agent_server in {mode} mode (model={args.model}) on {args.host}:{args.port}")
+    print(
+        f"Starting real_agent_server in {mode} mode "
+        f"(provider={args.provider}, model={resolved_model}) on {args.host}:{args.port}"
+    )
     uvicorn.run(app, host=args.host, port=args.port)
     return 0
 

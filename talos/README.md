@@ -11,6 +11,7 @@
 ![Adapters](https://img.shields.io/badge/adapters-langchain%20%7C%20native-111111?style=flat-square)
 ![Exploit Classes](https://img.shields.io/badge/exploit%20classes-7-111111?style=flat-square)
 ![Tests](https://img.shields.io/badge/tests-pytest-111111?style=flat-square)
+![CI](https://github.com/sadiapeerzada/Talos/actions/workflows/tests.yml/badge.svg)
 
 [Why Talos](#why-talos) ·
 [What it does](#what-talos-does) ·
@@ -249,20 +250,25 @@ The scan API accepts:
 
 The page includes:
 
-- a scan form,
+- a scan form, with a run label field for before/after comparison,
 - an adapter dropdown,
+- a step progress tracker (connect -> discover -> generate -> execute -> score),
 - a live progress area,
-- stats cards for:
+- a headline **risk score** (0-100, severity-weighted) plus stats for:
   - tools found,
   - attacks run,
-  - critical findings,
-  - high findings,
-- an expanding findings list with:
+  - critical / high / medium / low findings,
+- a findings list grouped by severity, each with:
   - severity badge,
   - title,
   - one-line summary,
   - reproduction steps,
-  - evidence.
+  - evidence,
+- a one-click **Export report (.md)** button that downloads the same
+  Markdown report format the CLI writes to disk,
+- a **before/after comparison table** that tracks every labeled run from
+  the current browser session and highlights the delta in risk score and
+  findings by severity between them.
 
 ### API behavior
 
@@ -443,7 +449,7 @@ This is enforced by the test suite through:
 
 ---
 
-## A real, non-fixture target: the Groq-backed agent
+## A real, non-fixture target: any OpenAI-compatible LLM
 
 The two sample agents above are useful for proving the harness is correct,
 but they share one rule-based decision function on purpose -- which invites a
@@ -451,11 +457,19 @@ fair question: does Talos actually generalize, or is it just tuned to detect
 its own fixtures?
 
 `talos/sample_agents/real_agent_server.py` answers that. It's a genuinely
-independent target: a real LLM (via the free [Groq API](https://console.groq.com))
-makes the tool-calling decisions, using its own system prompt, that Talos was
-never written against.
+independent target: a real LLM makes the tool-calling decisions, using its
+own system prompt, that Talos was never written against. `LLMBrain`
+(`talos/sample_agents/groq_brain.py`) talks to any OpenAI-compatible
+`/chat/completions` endpoint, so the exact same scan can be repeated against
+three different model providers with nothing but a `--provider` flag change:
 
-### Get a free Groq API key
+| Provider | Cost | Setup |
+|---|---|---|
+| `groq` (default) | free | [console.groq.com/keys](https://console.groq.com/keys) |
+| `openai` | paid | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) |
+| `ollama` | free, fully local, no API key | [ollama.com/download](https://ollama.com/download), then `ollama pull llama3.1` |
+
+### Get a free Groq API key (fastest path)
 
 1. Go to [console.groq.com/keys](https://console.groq.com/keys) and sign up
    (free, no credit card).
@@ -470,6 +484,9 @@ never written against.
 
 ```bash
 python -m talos.sample_agents.real_agent_server --port 8002
+# or against a fully local model, no API key or network egress at all:
+#   ollama pull llama3.1 && ollama serve
+#   python -m talos.sample_agents.real_agent_server --port 8002 --provider ollama
 ```
 
 This target has no guardrails beyond whatever the model does on its own --
