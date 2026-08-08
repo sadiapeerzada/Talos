@@ -98,3 +98,96 @@ def test_real_agent_server_tool_contract_matches_native_server():
     native_names = {t.name for t in native.TOOL_DEFS}
     real_names = {t.name for t in real.TOOL_DEFS}
     assert native_names == real_names == {"lookup_order", "issue_refund", "search_kb", "send_email"}
+
+
+def test_llm_brain_supports_multiple_providers_without_code_changes():
+    """LLMBrain must generalize across providers via a preset + optional
+    override, not just Groq -- this is what lets Talos claim it isn't
+    tuned to one vendor's API quirks. No network call is made here; this
+    only checks provider resolution and the required-API-key error path."""
+    from talos.sample_agents.groq_brain import PROVIDER_PRESETS, LLMBrain
+
+    assert {"groq", "openai", "ollama"}.issubset(PROVIDER_PRESETS)
+
+    # groq/openai require an API key env var and must raise a clear,
+    # actionable error (not a raw KeyError/AttributeError) when missing.
+    import os
+
+    old_groq = os.environ.pop("GROQ_API_KEY", None)
+    try:
+        try:
+            LLMBrain(provider="groq")
+            assert False, "expected RuntimeError for missing GROQ_API_KEY"
+        except RuntimeError as exc:
+            assert "GROQ_API_KEY" in str(exc)
+            assert "console.groq.com" in str(exc)
+    finally:
+        if old_groq is not None:
+            os.environ["GROQ_API_KEY"] = old_groq
+
+    # ollama needs no API key at all -- construction should succeed offline.
+    ollama_brain = LLMBrain(provider="ollama")
+    assert ollama_brain._base_url == PROVIDER_PRESETS["ollama"].base_url
+    assert ollama_brain._api_key is None
+
+
+def test_groq_brain_backcompat_alias_still_works():
+    """Earlier revisions only exposed GroqBrain -- it must keep working as
+    a thin LLMBrain(provider='groq') subclass for existing imports."""
+    from talos.sample_agents.groq_brain import GroqBrain, LLMBrain
+
+    import os
+
+    old_groq = os.environ.get("GROQ_API_KEY")
+    os.environ["GROQ_API_KEY"] = "test-key-not-real"
+    try:
+        brain = GroqBrain()
+        assert isinstance(brain, LLMBrain)
+        assert brain._provider == "groq"
+    finally:
+        if old_groq is None:
+            os.environ.pop("GROQ_API_KEY", None)
+        else:
+            os.environ["GROQ_API_KEY"] = old_groq
+
+
+def test_risk_score_weighting_and_clamping():
+    from talos.reporting.report import SeverityCounts, compute_risk_score
+
+    assert compute_risk_score(SeverityCounts()) == 0
+    assert compute_risk_score(SeverityCounts(low=1)) == 2
+    assert compute_risk_score(SeverityCounts(medium=1)) == 5
+    assert compute_risk_score(SeverityCounts(high=1)) == 12
+    assert compute_risk_score(SeverityCounts(critical=1)) == 25
+    # saturates at 100, never exceeds it even with many findings
+    assert compute_risk_score(SeverityCounts(critical=10)) == 100
+
+
+def test_export_report_endpoint_returns_downloadable_markdown():
+    from fastapi.testclient import TestClient
+    from talos.dashboard import app
+    from talos.reporting.report import ScanReport, ReportStats, SeverityCounts
+
+    client = TestClient(app)
+    report = ScanReport(
+        target="http://example.test/agent",
+        adapter="native",
+        generated_at="2026-01-01 00:00 UTC",
+        stats=ReportStats(
+            tools_found=4,
+            attack_templates_run=35,
+            exploit_classes_successful=1,
+            findings_tested=12,
+            severity_counts=SeverityCounts(high=1),
+            risk_score=12,
+        ),
+        tool_names=["lookup_order"],
+        tool_graph_mermaid="graph TD;",
+        findings=[],
+        not_reproduced=[],
+    )
+    resp = client.post("/api/reports/markdown", json=report.model_dump(mode="json"))
+    assert resp.status_code == 200
+    assert resp.headers["content-type"].startswith("text/markdown")
+    assert "attachment" in resp.headers["content-disposition"]
+    assert "Risk score:** 12 / 100" in resp.text

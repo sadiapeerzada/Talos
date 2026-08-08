@@ -71,12 +71,34 @@ class SeverityCounts(BaseModel):
     low: int = 0
 
 
+RISK_SCORE_WEIGHTS = {"critical": 25, "high": 12, "medium": 5, "low": 2}
+
+
+def compute_risk_score(counts: SeverityCounts) -> int:
+    """A single 0-100 headline risk number, weighted by severity, so a
+    before/after comparison (or a dashboard glance) has one legible number
+    instead of four separate counts to mentally combine. Weights are
+    intentionally steep on critical/high: a single critical finding alone
+    (25) already reads as meaningfully risky, and 4 criticals saturates the
+    scale, mirroring how a single unauthenticated financial/exfil exploit
+    should dominate the headline number regardless of how many low-severity
+    findings also exist."""
+    raw = (
+        counts.critical * RISK_SCORE_WEIGHTS["critical"]
+        + counts.high * RISK_SCORE_WEIGHTS["high"]
+        + counts.medium * RISK_SCORE_WEIGHTS["medium"]
+        + counts.low * RISK_SCORE_WEIGHTS["low"]
+    )
+    return max(0, min(100, raw))
+
+
 class ReportStats(BaseModel):
     tools_found: int
     attack_templates_run: int
     exploit_classes_successful: int
     findings_tested: int
     severity_counts: SeverityCounts
+    risk_score: int = 0
 
 
 class ReportVariant(BaseModel):
@@ -199,6 +221,7 @@ def build_report(
             exploit_classes_successful=len(successful),
             findings_tested=len(findings),
             severity_counts=severity_counts,
+            risk_score=compute_risk_score(severity_counts),
         ),
         tool_names=[tool.name for tool in tools],
         tool_graph_mermaid=to_mermaid(graph),
@@ -218,6 +241,7 @@ def render_markdown_report(report: ScanReport) -> str:
     lines.append(f"**Generated:** {report.generated_at}  ")
     lines.append(f"**Tools discovered:** {report.stats.tools_found}  ")
     lines.append(f"**Attack templates run:** {report.stats.attack_templates_run}  ")
+    lines.append(f"**Risk score:** {report.stats.risk_score} / 100  ")
     lines.append(
         f"**Exploit classes with a successful finding:** {report.stats.exploit_classes_successful} / "
         f"{report.stats.findings_tested} tool-pairs tested"

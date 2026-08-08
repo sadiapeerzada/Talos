@@ -32,6 +32,7 @@ class ProgressStats(BaseModel):
     attacks_total: int = 0
     critical: int = 0
     high: int = 0
+    risk_score: int = 0
 
 
 class ScanProgressEvent(BaseModel):
@@ -62,6 +63,7 @@ def _stats(*, tools_found: int = 0, attacks_run: int = 0, attacks_total: int = 0
         attacks_total=attacks_total,
         critical=report.stats.severity_counts.critical,
         high=report.stats.severity_counts.high,
+        risk_score=report.stats.risk_score,
     )
 
 
