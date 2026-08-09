@@ -1,0 +1,7 @@
+{
+  "target": "native sample agent (talos.sample_agents.native_server)",
+  "adapter": "native",
+  "risk_score": 100,
+  "updated_at": "2026-08-09T00:00:00Z",
+  "note": "Starting baseline: the native sample agent is deliberately vulnerable (see talos/talos/sample_agents/tools.py), so 100 is the expected worst case. The CI gate fails only if a PR makes this score WORSE (higher) than whatever is currently recorded here -- update this file (see talos/talos/scripts/ci_risk_gate.py --update) whenever an intentional, reviewed change legitimately raises or lowers the baseline."
+}
