@@ -66,6 +66,51 @@ def test_dashboard_scan_streams_progress_and_final_report(native_server_url):
     assert "template_stats" in learning_summary
 
 
+def test_medium_and_low_severity_counts_stay_consistent_with_critical_and_high(native_server_url):
+    """Regression test for a dashboard glitch: medium/low severity counts
+    used to be hardcoded to 0 in every intermediate SSE progress event
+    (only critical/high tracked the real running count), so the Medium and
+    Low stat blocks would sit frozen at 0 throughout the scan and only
+    snap to their real value on the final 'completed' event -- visibly
+    inconsistent with Critical/High, which updated live. ProgressStats
+    (and the JS that reads it) must now carry medium/low exactly the same
+    way as critical/high at every point in the stream where a running
+    report is available."""
+    payload = {
+        "target": native_server_url,
+        "adapter": "native",
+        "attacker_email": "collector@exfil-sink.example",
+        "seed_order_ids": ["1001", "1003"],
+        "poisoned_order_ids": ["1002"],
+    }
+
+    with client.stream("POST", "/api/scans", json=payload) as response:
+        assert response.status_code == 200
+        events = [json.loads(line) for line in response.iter_lines() if line]
+
+    scored_events = [e for e in events if e["type"] == "attack_scored"]
+    assert scored_events, "expected at least one attack_scored progress event"
+
+    # Every attack_scored event's stats must expose medium/low keys at all
+    # (not just critical/high) -- this alone would have failed before the fix.
+    for event in scored_events:
+        assert "medium" in event["stats"]
+        assert "low" in event["stats"]
+
+    final_event = events[-1]
+    assert final_event["type"] == "completed"
+    final_counts = final_event["report"]["stats"]["severity_counts"]
+
+    # The LAST attack_scored event (right before completion) should already
+    # reflect the same medium/low counts as the final report -- proving the
+    # running total was tracked throughout, not just materialized at the end.
+    last_scored = scored_events[-1]
+    assert last_scored["stats"]["medium"] == final_counts["medium"]
+    assert last_scored["stats"]["low"] == final_counts["low"]
+    assert last_scored["stats"]["critical"] == final_counts["critical"]
+    assert last_scored["stats"]["high"] == final_counts["high"]
+
+
 def test_monitor_runs_recurring_scans_and_exposes_history(native_server_url):
     payload = {
         "target": native_server_url,
