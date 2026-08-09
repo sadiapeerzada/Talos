@@ -7,6 +7,7 @@ import datetime as _dt
 import networkx as nx
 from pydantic import BaseModel, Field
 
+from talos.attacks.templates import TAXONOMY_VERSION
 from talos.execution.dedup import ExploitClassFinding
 from talos.graph.render import to_mermaid
 from talos.harness.base import ToolSpec
@@ -321,6 +322,7 @@ def render_markdown_report(report: ScanReport) -> str:
     lines.append(f"**Tools discovered:** {report.stats.tools_found}  ")
     lines.append(f"**Attack templates run:** {report.stats.attack_templates_run}  ")
     lines.append(f"**Risk score:** {report.stats.risk_score} / 100  ")
+    lines.append(f"**Taxonomy:** {TAXONOMY_VERSION}  ")
     lines.append(
         f"**Exploit classes with a successful finding:** {report.stats.exploit_classes_successful} / "
         f"{report.stats.findings_tested} tool-pairs tested"
