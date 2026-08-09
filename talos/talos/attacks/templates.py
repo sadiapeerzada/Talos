@@ -7,25 +7,33 @@ Each AttackTemplate declares:
   - `instantiate(ctx)`: build one or more concrete AttackInstance objects,
                       with slots (tool name, order id, amount, attacker
                       email) filled in from the discovered graph + seed data
-                      rather than hardcoded -- this is the "same ~25
+                      rather than hardcoded -- this is the "same 35
                       templates auto-adapt to whatever tools the target
                       exposes" requirement.
 
-Two mechanisms show up across the 25 templates, matching the two
+Two mechanisms show up across the 35 templates, matching the two
 intentional vulnerabilities in the sample agents:
-  - classes A / C / D / E get the agent to act on unsafe content that
-    arrived through the USER's own message,
+  - classes A / C / D / E / F / G get the agent to act on unsafe content
+    that arrived through the USER's own message,
   - class B gets the agent to act on unsafe content that arrived through
     a TOOL'S OWN OUTPUT (poisoned order notes / KB article body).
 That overlap is real and worth calling out in the report: several
 attacker *techniques* converge on the same one or two root-cause
 missing-validation bugs, which is exactly the "one vein" the project is
 named for.
+
+TAXONOMY_VERSION names this exact set of 7 exploit classes x 5 templates
+each (35 total, IDs A1-G5 below) as a citable, versioned reference --
+see the "Attack Taxonomy" section in README.md, which is generated
+directly from ALL_TEMPLATES below so it can never drift out of sync with
+what Talos actually runs.
 """
 
 from __future__ import annotations
 
 from talos.attacks.models import AttackContext, AttackInstance, AttackTemplate
+
+TAXONOMY_VERSION = "Talos-35 v1.0"
 
 
 def _tools_with_side_effect(ctx: AttackContext, side_effect: str) -> list[str]:

@@ -529,6 +529,16 @@ def _dashboard_html() -> str:
     .badge-low {{ color: var(--low); background: var(--low-bg); border: 1px solid rgba(95,156,129,0.4); }}
     .badge-low::before {{ background: var(--low); }}
     .finding-body {{ padding: 0 16px 16px; border-top: 1px solid var(--hairline-soft); }}
+    .blast-radius {{
+      margin: 12px 0 0;
+      padding: 8px 12px;
+      border-radius: 8px;
+      background: var(--gold-dim);
+      border: 1px solid var(--gold-line);
+      color: var(--gold-bright);
+      font-size: 0.85rem;
+      font-family: var(--mono);
+    }}
     .meta {{
       display: flex;
       gap: 16px;
@@ -942,7 +952,14 @@ def _dashboard_html() -> str:
               <span>class: <strong>${{escapeHtml(finding.exploit_label)}}</strong></span>
               <span>repro: <strong>${{Math.round((finding.reproducibility || 0) * 100)}}%</strong></span>
             </div>
+            ${{finding.blast_radius ? `<p class="blast-radius">${{escapeHtml(finding.blast_radius.summary)}}</p>` : ""}}
             <p><strong>Remediation:</strong> ${{escapeHtml(finding.remediation)}}</p>
+            ${{finding.remediation_patch ? `
+              <details class="variant">
+                <summary><strong>Suggested patch (drop-in)</strong></summary>
+                <pre>${{escapeHtml(finding.remediation_patch)}}</pre>
+              </details>
+            ` : ""}}
             ${{variants}}
           </div>
         </details>

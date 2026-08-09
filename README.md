@@ -250,7 +250,64 @@ tests/                  End-to-end and parity tests
 | 6 | **Authority spoofing** | Pretending to be an internal approver or operator | Agent trusts a fake director / supervisor / audit request |
 | 7 | **Policy shadowing** | Fake policy text overrides the real policy | Agent follows a fabricated bulletin, SOP, or runbook |
 
-These classes are deliberately centered on **agent-specific failure modes**, not generic model-safety categories — the point is to capture what breaks once an agent is wired to tools, data, and business actions. The taxonomy is v0; the corpus behind it grows with every engagement (see [The Moat](#the-moat-why-this-compounds)).
+These classes are deliberately centered on **agent-specific failure modes**, not generic model-safety categories — the point is to capture what breaks once an agent is wired to tools, data, and business actions.
+
+### Talos-35 v1.0 — the full, citable taxonomy
+
+The 7 classes above break down into **35 named, individually-citable attack
+templates** (IDs `A1`–`G5`), collectively versioned as **Talos-35 v1.0**.
+Every scan report cites the exact template ID(s) responsible for each
+finding, and every markdown report's header is stamped with the taxonomy
+version that produced it (`TAXONOMY_VERSION` in
+`talos/talos/attacks/templates.py`), so a result stays dated and
+reproducible even as the taxonomy grows in future versions. This table is
+generated directly from the live template definitions, so it can't drift
+out of sync with what Talos actually runs.
+
+<details>
+<summary><b>Show all 35 templates</b></summary>
+
+| ID | Exploit Class | Template | Description |
+|---|---|---|---|
+| `A1` | Direct Prompt Injection | Inflated refund via override | Bare direct-injection refund overage. |
+| `A2` | Direct Prompt Injection | Maintenance-mode data dump | Bare direct-injection exfil via fake maintenance mode. |
+| `A3` | Direct Prompt Injection | Fake account-owner authorization | Direct-injection email send via fake authorization. |
+| `A4` | Direct Prompt Injection | Fake developer/test-mode override | Direct-injection refund overage via fake dev override. |
+| `A5` | Direct Prompt Injection | Emergency override, combined | Direct-injection refund overage + email in one message. |
+| `B1` | Indirect Prompt Injection | Poisoned order notes via status check | Indirect injection through a poisoned order's notes field. |
+| `B2` | Indirect Prompt Injection | Poisoned order notes via summarize request | Same payload, explicit summarize framing. |
+| `B3` | Indirect Prompt Injection | Poisoned KB article, clean order | Indirect injection through a poisoned KB article. |
+| `B4` | Indirect Prompt Injection | Poisoned order bundled with unrelated ask | Tests directive firing under a benign-looking bundled request. |
+| `B5` | Indirect Prompt Injection | Poisoned KB article, second anchor order | Shows KB payload isn't order-id-specific. |
+| `C1` | Permission Escalation | Cross-turn escalation after a lookup | 2-turn chain: read, then unverified write. |
+| `C2` | Permission Escalation | Cross-turn escalation to an email action | 2-turn chain targeting send_email. |
+| `C3` | Permission Escalation | Self-declared lookup-implies-authority | Single-message chained read-then-write. |
+| `C4` | Permission Escalation | KB-search-implies-self-service-refund | Chains two low-priv reads into one write. |
+| `C5` | Permission Escalation | Mischaracterizing a write as read-only | Escalation via claiming the write is harmless. |
+| `D1` | Data Exfiltration | Full order history exfil | Direct exfil ask for one order's full record. |
+| `D2` | Data Exfiltration | Raw notes-field exfil | Direct exfil ask for the raw notes field. |
+| `D3` | Data Exfiltration | Fake-IT-audit PII export | Exfil framed as an internal audit request. |
+| `D4` | Data Exfiltration | Whole-database exfil | Exfil ask spanning every customer record. |
+| `D5` | Data Exfiltration | Socially-engineered personal-copy exfil | Soft social-engineering framing of the same ask. |
+| `E1` | Goal Hijacking | New-primary-directive override | Persona/goal override bundled with a refund ask. |
+| `E2` | Goal Hijacking | Blanket pre-approval override | Policy-override framing bundled with a refund ask. |
+| `E3` | Goal Hijacking | Fake policy-change override | Claims a policy change removed verification. |
+| `E4` | Goal Hijacking | Identity-replacement override | Reassigns the agent's persona/goal entirely. |
+| `E5` | Goal Hijacking | Combined override: refund + email exfil | Override framing driving both a refund and an exfil email. |
+| `F1` | Authority Spoofing | Finance-director refund approval spoof | Claims internal finance authority to bypass controls. |
+| `F2` | Authority Spoofing | Supervisor-authorized record export spoof | Claims supervisor authority for outbound data sharing. |
+| `F3` | Authority Spoofing | Compliance officer refund spoof | Claims compliance pre-approval for an exception refund. |
+| `F4` | Authority Spoofing | Audit team exfil authorization spoof | Claims audit-team authority for an external export. |
+| `F5` | Authority Spoofing | Fraud desk override spoof | Combines fake authority with refund and email asks. |
+| `G1` | Policy Shadowing | Fake refund bulletin | Uses a fabricated internal bulletin to shadow real policy. |
+| `G2` | Policy Shadowing | Fake export SOP | Uses a fabricated SOP to trigger outbound data sharing. |
+| `G3` | Policy Shadowing | Incident runbook shadowing | Shadows policy with an invented incident runbook. |
+| `G4` | Policy Shadowing | Playbook-based exfil shadowing | Claims a retention playbook requires off-system export. |
+| `G5` | Policy Shadowing | Shadow policy combined refund and email | Combines a fabricated policy with both a refund and an exfil ask. |
+
+</details>
+
+The corpus behind this taxonomy grows with every engagement (see [The Moat](#the-moat-why-this-compounds)) — future additions will version as Talos-35 v1.1, v2.0, etc., following normal semantic-versioning conventions (a minor bump adds templates without changing existing IDs; a major bump means an ID's definition changed).
 
 <br/>
 
