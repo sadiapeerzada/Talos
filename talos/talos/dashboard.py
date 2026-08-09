@@ -868,7 +868,7 @@ def _dashboard_html() -> str:
       toolsFound.textContent = String(stats.tools_found ?? 0);
       attacksRun.textContent = `${{stats.attacks_run ?? 0}}/${{stats.attacks_total ?? 0}}`;
       const counts = report ? severityCounts(report) : {{
-        critical: stats.critical ?? 0, high: stats.high ?? 0, medium: 0, low: 0
+        critical: stats.critical ?? 0, high: stats.high ?? 0, medium: stats.medium ?? 0, low: stats.low ?? 0
       }};
       criticalCount.textContent = String(counts.critical ?? stats.critical ?? 0);
       highCount.textContent = String(counts.high ?? stats.high ?? 0);
