@@ -71,40 +71,70 @@ def _dashboard_html() -> str:
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Talos Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
+    /*
+      Design tokens -- "assay mark" direction: a private vault ledger, not a
+      typical dark-mode dev tool. Black stands in for the vault, gold for
+      the seal stamped on a verified finding. Severity colors are pulled
+      deliberately AWAY from gold/amber (brass-green medium, patina-green
+      low) so a Medium finding never visually reads as "part of the theme"
+      the way a conventional amber/yellow severity color would on a gold
+      accent page -- see the write-up in the Medium-severity fix commit.
+
+      Color -- --ink #0a0a0c, --panel #131316, --hairline #2a231c (warm
+               bronze, not cool gray -- keeps borders in the gold family),
+               --gold #c9a227 (antique/museum gold, not neon), --ivory
+               #f3ead9 (warm parchment text, not stark white).
+      Type   -- Fraunces (display/headline serif, used sparingly for the
+               hero number and section titles) + IBM Plex Sans (body/UI) +
+               IBM Plex Mono (technical/data fields: URLs, JSON, dollar
+               amounts, evidence).
+      Layout -- unchanged grid/panel structure from the working dashboard;
+               this pass is a full re-skin, not a re-architecture.
+      Signature -- the Risk score card is rendered as a struck gold seal: a
+               conic-gradient ring that fills clockwise with the risk
+               score, the number set in Fraunces at its center. Everything
+               else stays quiet so this one element carries the "premium"
+               read.
+    */
     :root {{
       color-scheme: dark;
-      --bg: #0b0f14;
-      --bg-grid: #0e131a;
-      --panel: #121822;
-      --panel-2: #0e131c;
-      --border: #232c39;
-      --border-soft: #1a222d;
-      --text: #e6edf5;
-      --muted: #8b98a9;
-      --accent: #34e2b0;
-      --accent-dim: #1c8f6f;
-      --accent-soft: rgba(52, 226, 176, 0.12);
-      --critical: #ff6b6b;
-      --critical-bg: rgba(255, 107, 107, 0.14);
-      --high: #ff9f5a;
-      --high-bg: rgba(255, 159, 90, 0.14);
-      --medium: #f5d76e;
-      --medium-bg: rgba(245, 215, 110, 0.14);
-      --low: #6ee7b7;
-      --low-bg: rgba(110, 231, 183, 0.12);
-      --mono: "SFMono-Regular", ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace;
-      --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --ink: #0a0a0c;
+      --ink-grid: #0c0c0e;
+      --panel: #131316;
+      --panel-2: #0e0e10;
+      --hairline: #2a231c;
+      --hairline-soft: #1c1815;
+      --ivory: #f3ead9;
+      --muted: #9c9284;
+      --gold: #c9a227;
+      --gold-bright: #e8c766;
+      --gold-dim: rgba(201, 162, 39, 0.14);
+      --gold-line: rgba(201, 162, 39, 0.38);
+      --critical: #e0483f;
+      --critical-bg: rgba(224, 72, 63, 0.14);
+      --high: #e0913f;
+      --high-bg: rgba(224, 145, 63, 0.14);
+      --medium: #93a865;
+      --medium-bg: rgba(147, 168, 101, 0.14);
+      --low: #5f9c81;
+      --low-bg: rgba(95, 156, 129, 0.14);
+      --mono: "IBM Plex Mono", "SFMono-Regular", ui-monospace, Menlo, Consolas, monospace;
+      --sans: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --serif: "Fraunces", "Iowan Old Style", Georgia, serif;
     }}
     * {{ box-sizing: border-box; }}
     body {{
       margin: 0;
       font-family: var(--sans);
       background:
-        radial-gradient(1200px 600px at 15% -10%, rgba(52,226,176,0.07), transparent),
-        radial-gradient(900px 500px at 100% 0%, rgba(255,159,90,0.05), transparent),
-        var(--bg);
-      color: var(--text);
+        radial-gradient(1100px 550px at 12% -8%, rgba(201,162,39,0.06), transparent),
+        radial-gradient(800px 460px at 105% 4%, rgba(201,162,39,0.04), transparent),
+        var(--ink);
+      color: var(--ivory);
       -webkit-font-smoothing: antialiased;
     }}
     .page {{
@@ -121,43 +151,46 @@ def _dashboard_html() -> str:
     }}
     h1 {{
       margin: 0 0 6px;
-      font-size: 1.9rem;
-      letter-spacing: -0.02em;
+      font-family: var(--serif);
+      font-weight: 600;
+      font-size: 2.1rem;
+      letter-spacing: -0.01em;
     }}
     h1 .dot {{
       display: inline-block;
       width: 9px;
       height: 9px;
       border-radius: 50%;
-      background: var(--accent);
-      box-shadow: 0 0 12px 2px var(--accent-soft);
+      background: var(--gold);
+      box-shadow: 0 0 14px 2px var(--gold-dim);
       margin-right: 10px;
       vertical-align: middle;
     }}
     .subtitle {{ margin: 0 0 26px; color: var(--muted); font-size: 0.96rem; }}
     .badge-live {{
       font-family: var(--mono);
-      font-size: 0.72rem;
-      letter-spacing: 0.06em;
-      color: var(--accent);
-      background: var(--accent-soft);
-      border: 1px solid var(--accent-dim);
+      font-size: 0.7rem;
+      letter-spacing: 0.12em;
+      color: var(--gold-bright);
+      background: var(--gold-dim);
+      border: 1px solid var(--gold-line);
       border-radius: 999px;
-      padding: 5px 10px;
+      padding: 5px 12px;
       text-transform: uppercase;
     }}
     .panel {{
       background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 16px;
+      border: 1px solid var(--hairline);
+      border-radius: 14px;
       padding: 22px;
       margin-bottom: 18px;
-      box-shadow: 0 1px 0 rgba(255,255,255,0.02) inset;
+      box-shadow: 0 1px 0 rgba(255,255,255,0.015) inset;
     }}
     .panel-title {{
       margin: 0 0 4px;
-      font-size: 1.05rem;
-      font-weight: 700;
+      font-family: var(--serif);
+      font-size: 1.15rem;
+      font-weight: 600;
       display: flex;
       align-items: center;
       gap: 10px;
@@ -166,7 +199,7 @@ def _dashboard_html() -> str:
     .section-label {{
       font-family: var(--mono);
       font-size: 0.72rem;
-      color: var(--accent);
+      color: var(--gold);
       text-transform: uppercase;
       letter-spacing: 0.1em;
       margin: 0 0 10px;
@@ -195,38 +228,46 @@ def _dashboard_html() -> str:
     input, select, button, textarea {{
       width: 100%;
       padding: 11px 13px;
-      border: 1px solid var(--border);
-      border-radius: 10px;
+      border: 1px solid var(--hairline);
+      border-radius: 9px;
       font: inherit;
       background: var(--panel-2);
-      color: var(--text);
+      color: var(--ivory);
     }}
-    input, textarea {{ font-family: var(--mono); font-size: 0.88rem; }}
-    input::placeholder, textarea::placeholder {{ color: #4b5768; }}
+    input, textarea {{ font-family: var(--mono); font-size: 0.87rem; }}
+    input::placeholder, textarea::placeholder {{ color: #59503f; }}
     input:focus, select:focus, textarea:focus {{
       outline: none;
-      border-color: var(--accent-dim);
-      box-shadow: 0 0 0 3px var(--accent-soft);
+      border-color: var(--gold-line);
+      box-shadow: 0 0 0 3px var(--gold-dim);
     }}
     textarea {{ min-height: 76px; resize: vertical; }}
     button {{
       width: auto;
       min-width: 140px;
-      background: var(--accent);
-      color: #06251b;
+      background: linear-gradient(180deg, var(--gold-bright), var(--gold));
+      color: #17130a;
       font-weight: 700;
+      font-family: var(--sans);
       cursor: pointer;
-      border-color: var(--accent);
-      transition: transform 0.08s ease, box-shadow 0.15s ease;
+      border-color: var(--gold);
+      transition: transform 0.08s ease, box-shadow 0.18s ease, filter 0.18s ease;
     }}
-    button:hover:not(:disabled) {{ box-shadow: 0 0 0 4px var(--accent-soft); }}
+    button:hover:not(:disabled) {{
+      box-shadow: 0 0 0 4px var(--gold-dim), 0 6px 18px -6px rgba(201,162,39,0.55);
+      filter: brightness(1.04);
+    }}
     button:active:not(:disabled) {{ transform: translateY(1px); }}
-    button:disabled {{ opacity: 0.5; cursor: wait; }}
+    button:disabled {{ opacity: 0.45; cursor: wait; filter: none; box-shadow: none; }}
     .button-secondary {{
       background: var(--panel-2);
-      color: var(--text);
-      border-color: var(--border);
+      color: var(--ivory);
+      border-color: var(--hairline);
       font-weight: 600;
+    }}
+    .button-secondary:hover:not(:disabled) {{
+      box-shadow: 0 0 0 3px var(--hairline-soft);
+      filter: none;
     }}
     details {{ margin-top: 16px; }}
     details summary {{
@@ -235,6 +276,7 @@ def _dashboard_html() -> str:
       user-select: none;
       font-size: 0.9rem;
     }}
+    details summary:hover {{ color: var(--gold-bright); }}
     .advanced-groups {{
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -242,7 +284,7 @@ def _dashboard_html() -> str:
       margin-top: 16px;
     }}
     .advanced-group {{
-      border: 1px solid var(--border-soft);
+      border: 1px solid var(--hairline-soft);
       border-radius: 12px;
       padding: 14px;
       background: var(--panel-2);
@@ -273,7 +315,7 @@ def _dashboard_html() -> str:
       padding: 6px 12px 6px 6px;
       border-radius: 999px;
       background: var(--panel-2);
-      border: 1px solid var(--border);
+      border: 1px solid var(--hairline);
       font-size: 0.8rem;
       color: var(--muted);
       transition: all 0.25s ease;
@@ -287,17 +329,17 @@ def _dashboard_html() -> str:
       justify-content: center;
       font-size: 0.7rem;
       font-weight: 700;
-      background: var(--border-soft);
+      background: var(--hairline-soft);
       color: var(--muted);
       flex-shrink: 0;
     }}
-    .step.done {{ color: var(--text); border-color: var(--accent-dim); background: var(--accent-soft); }}
-    .step.done .step-dot {{ background: var(--accent); color: #06251b; }}
-    .step.active {{ color: var(--text); border-color: var(--accent); }}
-    .step.active .step-dot {{ background: var(--accent); color: #06251b; animation: pulse 1.4s ease-in-out infinite; }}
-    .step-connector {{ width: 18px; height: 1px; background: var(--border); flex-shrink: 0; }}
+    .step.done {{ color: var(--ivory); border-color: var(--gold-line); background: var(--gold-dim); }}
+    .step.done .step-dot {{ background: var(--gold); color: #17130a; }}
+    .step.active {{ color: var(--ivory); border-color: var(--gold); }}
+    .step.active .step-dot {{ background: var(--gold); color: #17130a; animation: pulse 1.4s ease-in-out infinite; }}
+    .step-connector {{ width: 18px; height: 1px; background: var(--hairline); flex-shrink: 0; }}
     @keyframes pulse {{
-      0%, 100% {{ box-shadow: 0 0 0 0 var(--accent-soft); }}
+      0%, 100% {{ box-shadow: 0 0 0 0 var(--gold-dim); }}
       50% {{ box-shadow: 0 0 0 6px transparent; }}
     }}
 
@@ -312,7 +354,7 @@ def _dashboard_html() -> str:
     .status-text {{ font-weight: 600; }}
     .status-subtext {{ color: var(--muted); font-size: 0.9rem; margin-top: 4px; }}
 
-    /* Hero stat row */
+    /* Hero stat row -- the risk-score card carries the signature gauge */
     .hero-stats {{
       display: grid;
       grid-template-columns: 1.4fr 1fr 1fr 1fr;
@@ -322,32 +364,62 @@ def _dashboard_html() -> str:
     .hero-stat {{
       border-radius: 14px;
       padding: 18px;
-      border: 1px solid var(--border);
+      border: 1px solid var(--hairline);
       background: var(--panel-2);
       position: relative;
       overflow: hidden;
     }}
     .hero-stat.wow {{
-      background: linear-gradient(135deg, rgba(52,226,176,0.14), rgba(52,226,176,0.02));
-      border-color: var(--accent-dim);
+      background: linear-gradient(135deg, rgba(201,162,39,0.10), rgba(201,162,39,0.01));
+      border-color: var(--gold-line);
+      display: flex;
+      align-items: center;
+      gap: 16px;
     }}
     .hero-stat-label {{
       color: var(--muted);
-      font-size: 0.78rem;
+      font-size: 0.76rem;
       text-transform: uppercase;
-      letter-spacing: 0.06em;
+      letter-spacing: 0.07em;
       margin-bottom: 8px;
       font-family: var(--mono);
     }}
     .hero-stat-value {{
-      font-size: 2.1rem;
-      font-weight: 800;
-      letter-spacing: -0.03em;
-      font-family: var(--mono);
+      font-size: 2.05rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      font-family: var(--serif);
     }}
     .hero-stat-value.crit {{ color: var(--critical); }}
     .hero-stat-value.high {{ color: var(--high); }}
     .hero-stat-sub {{ color: var(--muted); font-size: 0.78rem; margin-top: 4px; }}
+
+    /* Signature element: gold seal / gauge ring around the risk score,
+       filled clockwise via a conic-gradient driven by --risk-pct (set in
+       JS as a percentage 0-100). */
+    .risk-gauge {{
+      --risk-pct: 0%;
+      width: 76px;
+      height: 76px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      background: conic-gradient(var(--gold) var(--risk-pct), var(--hairline-soft) var(--risk-pct));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.6s ease;
+    }}
+    .risk-gauge-inner {{
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: var(--panel);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: inset 0 0 0 1px var(--hairline);
+    }}
+    .hero-stat.wow .hero-stat-copy {{ flex: 1; min-width: 0; }}
 
     .stats {{
       display: grid;
@@ -356,12 +428,12 @@ def _dashboard_html() -> str:
     }}
     .stat {{
       background: var(--panel-2);
-      border: 1px solid var(--border);
+      border: 1px solid var(--hairline);
       border-radius: 12px;
       padding: 14px 16px;
     }}
     .stat-label {{ color: var(--muted); font-size: 0.8rem; margin-bottom: 6px; font-family: var(--mono); }}
-    .stat-value {{ font-size: 1.5rem; font-weight: 700; letter-spacing: -0.03em; font-family: var(--mono); }}
+    .stat-value {{ font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; font-family: var(--serif); }}
 
     .findings-empty {{ color: var(--muted); margin: 0; }}
     .skeleton {{
@@ -372,7 +444,7 @@ def _dashboard_html() -> str:
     .skeleton-row {{
       height: 56px;
       border-radius: 12px;
-      background: linear-gradient(90deg, var(--panel-2) 0%, var(--border-soft) 50%, var(--panel-2) 100%);
+      background: linear-gradient(90deg, var(--panel-2) 0%, var(--hairline-soft) 50%, var(--panel-2) 100%);
       background-size: 200% 100%;
       animation: shimmer 1.4s ease-in-out infinite;
     }}
@@ -406,45 +478,8 @@ def _dashboard_html() -> str:
       flex-direction: column;
       gap: 10px;
     }}
-    .alerts-list {{
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      margin-top: 14px;
-    }}
-    .alert-card {{
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      background: #fafafa;
-      padding: 14px;
-    }}
-    .alert-card h3 {{
-      margin: 0 0 6px;
-      font-size: 1rem;
-    }}
-    .learning-grid {{
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 12px;
-      margin-top: 14px;
-    }}
-    .learning-card {{
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      background: #fafafa;
-      padding: 14px;
-    }}
-    .learning-card h3 {{
-      margin: 0 0 10px;
-      font-size: 1rem;
-    }}
-    .learning-card ul {{
-      margin: 0;
-      padding-left: 18px;
-      color: var(--muted);
-    }}
     .finding {{
-      border: 1px solid var(--border);
+      border: 1px solid var(--hairline);
       border-radius: 14px;
       background: var(--panel-2);
       overflow: hidden;
@@ -466,7 +501,7 @@ def _dashboard_html() -> str:
       gap: 12px;
       align-items: flex-start;
     }}
-    .finding-title {{ font-weight: 700; margin: 0 0 4px; font-size: 0.96rem; }}
+    .finding-title {{ font-weight: 700; margin: 0 0 4px; font-size: 0.96rem; font-family: var(--sans); }}
     .finding-summary {{ margin: 0; color: var(--muted); font-size: 0.88rem; }}
     .badge {{
       display: inline-flex;
@@ -485,15 +520,15 @@ def _dashboard_html() -> str:
       white-space: nowrap;
     }}
     .badge::before {{ content: ""; width: 6px; height: 6px; border-radius: 50%; display: inline-block; }}
-    .badge-critical {{ color: var(--critical); background: var(--critical-bg); border: 1px solid rgba(255,107,107,0.35); }}
+    .badge-critical {{ color: var(--critical); background: var(--critical-bg); border: 1px solid rgba(224,72,63,0.35); }}
     .badge-critical::before {{ background: var(--critical); }}
-    .badge-high {{ color: var(--high); background: var(--high-bg); border: 1px solid rgba(255,159,90,0.35); }}
+    .badge-high {{ color: var(--high); background: var(--high-bg); border: 1px solid rgba(224,145,63,0.35); }}
     .badge-high::before {{ background: var(--high); }}
-    .badge-medium {{ color: var(--medium); background: var(--medium-bg); border: 1px solid rgba(245,215,110,0.35); }}
+    .badge-medium {{ color: var(--medium); background: var(--medium-bg); border: 1px solid rgba(147,168,101,0.4); }}
     .badge-medium::before {{ background: var(--medium); }}
-    .badge-low {{ color: var(--low); background: var(--low-bg); border: 1px solid rgba(110,231,183,0.35); }}
+    .badge-low {{ color: var(--low); background: var(--low-bg); border: 1px solid rgba(95,156,129,0.4); }}
     .badge-low::before {{ background: var(--low); }}
-    .finding-body {{ padding: 0 16px 16px; border-top: 1px solid var(--border-soft); }}
+    .finding-body {{ padding: 0 16px 16px; border-top: 1px solid var(--hairline-soft); }}
     .meta {{
       display: flex;
       gap: 16px;
@@ -504,11 +539,11 @@ def _dashboard_html() -> str:
       font-family: var(--mono);
     }}
     .variant {{
-      border: 1px solid var(--border-soft);
+      border: 1px solid var(--hairline-soft);
       border-radius: 10px;
       padding: 12px;
       margin-top: 10px;
-      background: var(--bg-grid);
+      background: var(--ink-grid);
     }}
     .variant h4 {{ margin: 0 0 8px; font-size: 0.9rem; font-family: var(--mono); font-weight: 600; }}
     ol {{ margin: 8px 0 0 20px; padding: 0; font-size: 0.88rem; }}
@@ -516,25 +551,33 @@ def _dashboard_html() -> str:
       margin: 8px 0 0;
       padding: 12px;
       border-radius: 10px;
-      background: #060a0f;
-      color: #c9d6e3;
+      background: #050505;
+      color: #d8cdb8;
       overflow: auto;
       font-size: 0.8rem;
-      border: 1px solid var(--border-soft);
+      border: 1px solid var(--hairline-soft);
     }}
     .hidden {{ display: none; }}
 
     .monitor-actions {{ display: flex; gap: 12px; flex-wrap: wrap; margin-top: 14px; }}
     .monitor-actions button {{ width: auto; }}
     .history-list {{ display: flex; flex-direction: column; gap: 12px; margin-top: 14px; }}
-    .history-card {{ border: 1px solid var(--border); border-radius: 12px; background: var(--panel-2); padding: 14px; }}
+    .history-card {{ border: 1px solid var(--hairline); border-radius: 12px; background: var(--panel-2); padding: 14px; }}
     .history-card h3 {{ margin: 0 0 6px; font-size: 0.95rem; font-family: var(--mono); }}
     .history-meta {{ color: var(--muted); font-size: 0.85rem; display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; font-family: var(--mono); }}
     .monitor-empty {{ color: var(--muted); margin: 0; }}
 
+    .alerts-list {{ display: flex; flex-direction: column; gap: 12px; margin-top: 14px; }}
+    .alert-card {{ border: 1px solid rgba(224,145,63,0.35); border-radius: 12px; background: var(--high-bg); padding: 14px; }}
+    .alert-card h3 {{ margin: 0 0 6px; font-size: 0.95rem; font-family: var(--mono); color: var(--high); }}
+    .learning-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-top: 14px; }}
+    .learning-card {{ border: 1px solid var(--hairline); border-radius: 12px; background: var(--panel-2); padding: 14px; }}
+    .learning-card h3 {{ margin: 0 0 8px; font-size: 0.88rem; font-family: var(--mono); color: var(--gold-bright); text-transform: uppercase; letter-spacing: 0.05em; }}
+    .learning-card ul {{ margin: 0; padding-left: 18px; font-size: 0.85rem; color: var(--muted); }}
+
     /* Before/after run comparison */
     .compare-table {{ width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 0.88rem; }}
-    .compare-table th, .compare-table td {{ text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border-soft); }}
+    .compare-table th, .compare-table td {{ text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--hairline-soft); }}
     .compare-table th {{ color: var(--muted); font-family: var(--mono); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; }}
     .compare-table td.label-cell {{ font-weight: 700; }}
     .delta-down {{ color: var(--low); font-family: var(--mono); }}
@@ -543,7 +586,7 @@ def _dashboard_html() -> str:
     .runs-empty {{ color: var(--muted); font-size: 0.88rem; margin-top: 10px; }}
 
     @media (max-width: 820px) {{
-      form, .stats, .hero-stats, .advanced-groups {{ grid-template-columns: 1fr; }}
+      form, .stats, .hero-stats, .advanced-groups, .learning-grid {{ grid-template-columns: 1fr; }}
       button {{ width: 100%; }}
     }}
   </style>
@@ -632,9 +675,14 @@ def _dashboard_html() -> str:
       </div>
       <div class="hero-stats">
         <div class="hero-stat wow">
-          <div class="hero-stat-label">Risk score</div>
-          <div id="hero-risk" class="hero-stat-value">0<span style="font-size: 1rem; color: var(--muted);">/100</span></div>
-          <div class="hero-stat-sub" id="hero-risk-sub">no scan run yet</div>
+          <div class="risk-gauge" id="risk-gauge">
+            <div class="risk-gauge-inner"></div>
+          </div>
+          <div class="hero-stat-copy">
+            <div class="hero-stat-label">Risk score</div>
+            <div id="hero-risk" class="hero-stat-value">0<span style="font-size: 1rem; color: var(--muted);">/100</span></div>
+            <div class="hero-stat-sub" id="hero-risk-sub">no scan run yet</div>
+          </div>
         </div>
         <div class="hero-stat">
           <div class="hero-stat-label">Total findings</div>
@@ -747,6 +795,7 @@ def _dashboard_html() -> str:
     const attacksRun = document.getElementById("attacks-run");
     const heroRisk = document.getElementById("hero-risk");
     const heroRiskSub = document.getElementById("hero-risk-sub");
+    const riskGauge = document.getElementById("risk-gauge");
     const heroTotal = document.getElementById("hero-total");
     const exportReportButton = document.getElementById("export-report-button");
     const criticalCount = document.getElementById("critical-count");
@@ -830,6 +879,7 @@ def _dashboard_html() -> str:
 
       const risk = report?.stats?.risk_score ?? stats.risk_score ?? 0;
       heroRisk.innerHTML = `${{risk}}<span style="font-size: 1rem; color: var(--muted);">/100</span>`;
+      riskGauge.style.setProperty("--risk-pct", `${{risk}}%`);
       heroRisk.className = "hero-stat-value" + (risk >= 60 ? " crit" : risk >= 25 ? " high" : "");
       heroRiskSub.textContent = findingsTotal
         ? `${{counts.critical || 0}} critical, ${{counts.high || 0}} high`
