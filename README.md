@@ -18,8 +18,6 @@
 ![Templates](https://img.shields.io/badge/attack%20templates-35-111111?style=flat-square)
 ![Tests](https://img.shields.io/badge/tests-pytest-111111?style=flat-square)
 
-**Built for the BMW Amulate Hackathon**
-
 ### [🡒 Try Talos live: talos-red-team.vercel.app](https://talos-red-team.vercel.app)
 
 [The Myth](#the-myth-and-the-thesis) · [Why Talos](#why-talos) · [Architecture](#architecture) · [What It Does](#what-talos-does) · [Live Demo](#live-demo-flow) · [Quick Start](#quick-start) · [Before/After](#before--after-proving-talos-validates-a-fix-not-just-a-break) · [Roadmap](#roadmap) · [Judges' Checklist](#for-the-judges-what-to-look-at-in-5-minutes) · [Full TOC ↓](#-table-of-contents)
