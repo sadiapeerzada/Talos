@@ -954,6 +954,12 @@ def _dashboard_html() -> str:
             </div>
             ${{finding.blast_radius ? `<p class="blast-radius">${{escapeHtml(finding.blast_radius.summary)}}</p>` : ""}}
             <p><strong>Remediation:</strong> ${{escapeHtml(finding.remediation)}}</p>
+            ${{finding.remediation_patch ? `
+              <details class="variant">
+                <summary><strong>Suggested patch (drop-in)</strong></summary>
+                <pre>${{escapeHtml(finding.remediation_patch)}}</pre>
+              </details>
+            ` : ""}}
             ${{variants}}
           </div>
         </details>

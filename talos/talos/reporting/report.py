@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field
 from talos.execution.dedup import ExploitClassFinding
 from talos.graph.render import to_mermaid
 from talos.harness.base import ToolSpec
+from talos.remediation import generate_remediation_patch
 
 SEVERITY_EMOJI = {"critical": "🔴", "high": "🟠", "medium": "🟡", "low": "🟢", "none": "⚪"}
 
@@ -188,6 +189,7 @@ class ReportFinding(BaseModel):
     title: str
     summary: str
     remediation: str
+    remediation_patch: str = ""
     blast_radius: BlastRadius = Field(default_factory=BlastRadius)
     variants: list[ReportVariant] = Field(default_factory=list)
 
@@ -275,6 +277,11 @@ def build_report(
             title=f"{label} -> {finding.target_tool}",
             summary=_summarize_finding(finding),
             remediation=REMEDIATIONS.get(finding.exploit_class, ""),
+            remediation_patch=generate_remediation_patch(
+                exploit_class=finding.exploit_class,
+                target_tool=finding.target_tool,
+                variants=report_variants,
+            ),
             blast_radius=estimate_blast_radius(finding.target_tool, report_variants),
             variants=report_variants,
         )
@@ -384,6 +391,15 @@ def render_markdown_report(report: ScanReport) -> str:
             lines.append("")
         lines.append(f"**Remediation:** {finding.remediation}")
         lines.append("")
+        if finding.remediation_patch:
+            lines.append("<details><summary><strong>Suggested patch (drop-in)</strong></summary>")
+            lines.append("")
+            lines.append("```python")
+            lines.append(finding.remediation_patch.rstrip())
+            lines.append("```")
+            lines.append("")
+            lines.append("</details>")
+            lines.append("")
 
     if report.not_reproduced:
         lines.append("## Not Reproduced")
