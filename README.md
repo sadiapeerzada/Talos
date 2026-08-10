@@ -54,6 +54,7 @@
 - [Why the Two Sample Agents Matter](#why-the-two-sample-agents-matter)
 - [What a Strong Finding Looks Like](#what-a-strong-finding-looks-like)
 - [Testing](#testing)
+- [External Target Validation](#external-target-validation)
 - [Known Simplifications](#known-simplifications)
 - [The Moat](#the-moat-why-this-compounds)
 - [Roadmap](#roadmap)
@@ -584,6 +585,24 @@ pytest tests/ -v
 ```
 
 Spins up real sample-agent subprocesses and validates: adapter parity, graph parity, full scan parity, adaptive generation behavior, dashboard HTML serving, dashboard scan streaming, monitoring lifecycle and run history, persistent alert generation, cross-engagement learning summary, and end-to-end findings behavior.
+
+<br/>
+
+## External target validation
+
+Talos's own sample agents are useful for proving the harness is correct,
+but that invites a fair question: does it generalize, or is it just tuned
+to detect its own fixtures? `talos/talos/sample_agents/external_langchain_agent.py`
+is a genuinely independent target — a different domain (internal IT
+helpdesk, not customer-service refunds), zero shared code with Talos's own
+fixtures, and a real idiomatic LangChain agent using the actual public API.
+
+The full harness/adapter integration is automatically verified in CI with
+no API key required (LangChain's own fake-model test double proves the
+wiring works); the live security scan itself needs your own model API key
+to run for real. See **[docs/external-target-validation.md](docs/external-target-validation.md)**
+for exactly what's been verified, what's pending a live key, and the exact
+commands to reproduce the scan yourself.
 
 <br/>
 

@@ -20,6 +20,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]
+external-langchain = ["langchain-groq>=0.2", "langchain-openai>=0.2"]
 
 [project.scripts]
 talos-scan = "talos.cli:main"
