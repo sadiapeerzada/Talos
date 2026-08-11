@@ -17,7 +17,8 @@ from pydantic import BaseModel, Field
 
 from talos.learning import LearningStore, LearningSummary
 from talos.monitoring import AlertRecord, MonitorConfig, MonitorSnapshot, MonitoringManager
-from talos.reporting.report import ScanReport, render_markdown_report
+from talos.replay import render_replay_html
+from talos.reporting.report import ReportFinding, ScanReport, render_markdown_report
 from talos.scan_service import (
     ADAPTERS,
     DEFAULT_ATTACKER_EMAIL,
@@ -539,6 +540,32 @@ def _dashboard_html() -> str:
       font-size: 0.85rem;
       font-family: var(--mono);
     }}
+    .replay-controls {{
+      display: flex;
+      gap: 10px;
+      margin-top: 14px;
+      flex-wrap: wrap;
+    }}
+    .replay-controls button {{
+      width: auto;
+      min-width: 0;
+      padding: 8px 14px;
+      font-size: 0.8rem;
+    }}
+    .replay-frame-wrap {{
+      margin-top: 14px;
+      border: 1px solid var(--gold-line);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 0 0 3px var(--gold-dim);
+    }}
+    .replay-frame {{
+      width: 100%;
+      height: 480px;
+      border: 0;
+      display: block;
+      background: var(--ink);
+    }}
     .meta {{
       display: flex;
       gap: 16px;
@@ -960,6 +987,13 @@ def _dashboard_html() -> str:
                 <pre>${{escapeHtml(finding.remediation_patch)}}</pre>
               </details>
             ` : ""}}
+            <div class="replay-controls">
+              <button type="button" class="button-secondary replay-toggle-btn" onclick="toggleReplay(${{finding._replayId}}, this)">Replay</button>
+              <button type="button" class="button-secondary" onclick="downloadReplay(${{finding._replayId}})">Download replay (.html)</button>
+            </div>
+            <div class="replay-frame-wrap hidden" id="replay-wrap-${{finding._replayId}}">
+              <iframe class="replay-frame" id="replay-frame-${{finding._replayId}}" title="Exploit replay"></iframe>
+            </div>
             ${{variants}}
           </div>
         </details>
@@ -979,6 +1013,9 @@ def _dashboard_html() -> str:
 
       findingsEmpty.classList.add("hidden");
       findingsContainer.classList.remove("hidden");
+
+      findingRegistry = {{}};
+      findings.forEach((f, i) => {{ findingRegistry[i] = f; f._replayId = i; }});
 
       const groups = {{}};
       for (const f of findings) {{
@@ -1063,6 +1100,7 @@ def _dashboard_html() -> str:
     }}
 
     let latestReport = null;
+    let findingRegistry = {{}};
 
     async function exportReport() {{
       if (!latestReport) return;
@@ -1092,6 +1130,65 @@ def _dashboard_html() -> str:
       }} finally {{
         exportReportButton.disabled = false;
         exportReportButton.textContent = "Export report (.md)";
+      }}
+    }}
+
+    async function toggleReplay(id, buttonEl) {{
+      const wrap = document.getElementById(`replay-wrap-${{id}}`);
+      const frame = document.getElementById(`replay-frame-${{id}}`);
+      if (!wrap.classList.contains("hidden")) {{
+        wrap.classList.add("hidden");
+        buttonEl.textContent = "Replay";
+        return;
+      }}
+      const finding = findingRegistry[id];
+      if (!finding) return;
+      buttonEl.disabled = true;
+      const originalLabel = buttonEl.textContent;
+      buttonEl.textContent = "Loading...";
+      try {{
+        const response = await fetch("/api/replay", {{
+          method: "POST",
+          headers: {{ "Content-Type": "application/json" }},
+          body: JSON.stringify(finding)
+        }});
+        if (!response.ok) throw new Error(`Replay failed with status ${{response.status}}`);
+        const replayHtml = await response.text();
+        frame.srcdoc = replayHtml;
+        wrap.classList.remove("hidden");
+        buttonEl.textContent = "Hide replay";
+      }} catch (error) {{
+        statusSubtext.textContent = `Replay failed: ${{error.message}}`;
+        buttonEl.textContent = originalLabel;
+      }} finally {{
+        buttonEl.disabled = false;
+      }}
+    }}
+
+    async function downloadReplay(id) {{
+      const finding = findingRegistry[id];
+      if (!finding) return;
+      try {{
+        const response = await fetch("/api/replay/download", {{
+          method: "POST",
+          headers: {{ "Content-Type": "application/json" }},
+          body: JSON.stringify(finding)
+        }});
+        if (!response.ok) throw new Error(`Download failed with status ${{response.status}}`);
+        const blob = await response.blob();
+        const disposition = response.headers.get("Content-Disposition") || "";
+        const match = disposition.match(/filename="?([^"]+)"?/);
+        const filename = match ? match[1] : "talos-replay.html";
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+      }} catch (error) {{
+        statusSubtext.textContent = `Replay download failed: ${{error.message}}`;
       }}
     }}
 
@@ -1412,6 +1509,29 @@ def export_report_markdown(report: ScanReport) -> PlainTextResponse:
     return PlainTextResponse(
         content=markdown,
         media_type="text/markdown",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@app.post("/api/replay")
+def export_replay_html(finding: ReportFinding) -> HTMLResponse:
+    """Render one finding's attack conversation as a self-contained,
+    animated 'case-file' HTML document (talos/talos/replay.py) -- served
+    two ways from this one endpoint: the dashboard embeds the response
+    directly via <iframe srcdoc> for the in-place 'Replay' toggle, and the
+    'Download replay (.html)' button downloads the identical bytes as a
+    standalone file. Stateless, same pattern as /api/reports/markdown."""
+    replay_html = render_replay_html(finding.model_dump(mode="json"))
+    return HTMLResponse(content=replay_html)
+
+
+@app.post("/api/replay/download")
+def download_replay_html(finding: ReportFinding) -> HTMLResponse:
+    replay_html = render_replay_html(finding.model_dump(mode="json"))
+    safe_tool = "".join(c if c.isalnum() else "-" for c in finding.target_tool)[:40]
+    filename = f"talos-replay-{safe_tool}-{int(time.time())}.html"
+    return HTMLResponse(
+        content=replay_html,
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
 

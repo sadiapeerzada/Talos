@@ -447,7 +447,7 @@ Starts locally and opens your browser by default.
 
 **Scan API inputs:** `target`, `adapter`, `attacker_email`, `seed_order_ids`, `poisoned_order_ids`, `strategy`, `attack_model`.
 
-**Dashboard UI:** scan form, adapter dropdown, live progress area, stats cards (tools found / attacks run / critical / high), and an expanding findings list with severity badge, title, one-line summary, repro steps, and evidence.
+**Dashboard UI:** black-and-gold themed scan form with a run-label field for before/after tracking, a live step-progress tracker (connect → discover → generate → execute → score), a gold conic-gradient risk-score gauge (0-100, severity-weighted) as the headline stat, findings grouped by severity with counts, and — per finding — a blast-radius exposure line, an auto-generated drop-in remediation patch, an animated "exploit replay" (an in-place, downloadable, offline-viewable case-file walkthrough of the actual attack), and a one-click Export report (.md) button. A before/after comparison table tracks every labeled run from the browser session with risk-score deltas.
 
 **Monitoring APIs:** `POST /api/monitors`, `GET /api/monitors`, `GET /api/monitors/{id}`, `POST /api/monitors/{id}/stop`, `GET /api/alerts`, `GET /api/learning/summary` — all persisted to a local SQLite store at `~/.talos/dashboard.db`.
 
