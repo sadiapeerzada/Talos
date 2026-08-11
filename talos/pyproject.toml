@@ -25,6 +25,7 @@ external-langchain = ["langchain-groq>=0.2", "langchain-openai>=0.2"]
 [project.scripts]
 talos-scan = "talos.cli:main"
 talos-dashboard = "talos.dashboard:main"
+talos-autofix = "talos.autofix:main"
 
 [tool.setuptools.packages.find]
 include = ["talos*"]

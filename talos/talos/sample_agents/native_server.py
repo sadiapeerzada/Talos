@@ -98,7 +98,21 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--port", type=int, default=8001)
     parser.add_argument("--host", default="127.0.0.1")
+    parser.add_argument(
+        "--hardened",
+        action="store_true",
+        help="Wrap the rule-based brain in PolicyEnforcingBrain (talos.sample_agents.policy) -- "
+        "the same deterministic guardrails proven against the real/Groq-backed target, applied "
+        "here to the deterministic vulnerable brain for the item-8 auto-patch-and-reverify loop.",
+    )
     args = parser.parse_args()
+
+    if args.hardened:
+        global BRAIN
+        from talos.sample_agents.policy import PolicyEnforcingBrain
+
+        BRAIN = PolicyEnforcingBrain(RuleBasedBrain())
+
     uvicorn.run(app, host=args.host, port=args.port)
 
 

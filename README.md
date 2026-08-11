@@ -48,6 +48,7 @@
 - [Web Dashboard](#web-dashboard)
 - [A Real, Non-Fixture Target](#a-real-non-fixture-target-the-groq-backed-agent)
 - [Before / After](#before--after-proving-talos-validates-a-fix-not-just-a-break)
+- [Auto-Fix & Re-Verify](#auto-fix--re-verify-closing-the-loop-autonomously)
 - [Continuous Monitoring](#continuous-monitoring)
 - [Cross-Engagement Learning](#cross-engagement-learning)
 - [CLI Reference](#cli-reference)
@@ -495,6 +496,31 @@ talos-dashboard
 In the dashboard: run a scan labeled `before` against `:8002`, run a scan labeled `after` against `:8003`, then scroll to the **before/after comparison** panel — it tracks every labeled run from the browser session and shows the delta in critical/high/medium/low findings between them. Critical/high findings typically drop sharply (often to zero) on the hardened target, while the underlying model and tools are otherwise unchanged.
 
 The policy backstop is independently covered by `tests/test_real_agent_hardening.py`, which asserts these guarantees hold without needing a live API call.
+
+<br/>
+
+## Auto-fix & re-verify: closing the loop autonomously
+
+Most agent red-teaming tools stop at reporting. Talos can go one step further for targets it controls the source of: **scan → find → auto-patch → re-scan → prove the fix held**, fully unattended, no human editing code in between.
+
+```bash
+talos-autofix
+```
+
+This runs the complete cycle against a fresh copy of the native sample agent: scans it (vulnerable), determines which of Talos's own generated hardening strategies apply based on what actually succeeded, spins up a **second, freshly-hardened instance** (`native_server.py --hardened`, wrapping the exact same `PolicyEnforcingBrain` the before/after demo above already proves works — not new magic), re-scans it, and prints the result:
+
+```
+Initial scan:  risk score 100/100 (7 high, 5 medium)
+Applying 7 exploit-class hardening strategies...
+Re-scan:       risk score   0/100 (0 high, 0 medium)
+Risk reduced by 100 points, 12 of 12 findings closed.
+```
+
+The dashboard has an **Auto-fix & re-verify** button next to Export report that streams this same cycle live and automatically drops both runs into the before/after comparison table as `auto-fix: before` / `auto-fix: after` — no manual labeling needed.
+
+`HARDENING_STRATEGIES` in `talos/talos/autofix.py` is a small, real, inspectable registry mapping each exploit class to the strategy that closes it — not a black box a reader has to trust blindly.
+
+**Honest scope:** this only works for targets Talos controls the source of. It's a self-healing *demo target* capability, not a claim that Talos can silently patch any agent on the internet — see [External target validation](#external-target-validation) for the honest boundary on that side. The core claim (risk score strictly drops, and specific exploit classes stop succeeding, not just "the number went down") is proven end-to-end against real subprocesses in `tests/test_autofix.py` — no mocking, no simulation.
 
 <br/>
 
