@@ -49,6 +49,7 @@
 - [A Real, Non-Fixture Target](#a-real-non-fixture-target-the-groq-backed-agent)
 - [Before / After](#before--after-proving-talos-validates-a-fix-not-just-a-break)
 - [Auto-Fix & Re-Verify](#auto-fix--re-verify-closing-the-loop-autonomously)
+- [Multi-Agent Attack Chaining](#multi-agent-attack-chaining-exploits-that-dont-exist-in-a-single-agent)
 - [Continuous Monitoring](#continuous-monitoring)
 - [Cross-Engagement Learning](#cross-engagement-learning)
 - [CLI Reference](#cli-reference)
@@ -314,6 +315,8 @@ out of sync with what Talos actually runs.
 
 The corpus behind this taxonomy grows with every engagement (see [The Moat](#the-moat-why-this-compounds)) — future additions will version as Talos-35 v1.1, v2.0, etc., following normal semantic-versioning conventions (a minor bump adds templates without changing existing IDs; a major bump means an ID's definition changed).
 
+**An 8th class exists outside this count on purpose.** `cross_agent_injection` (see [Multi-Agent Attack Chaining](#multi-agent-attack-chaining-exploits-that-dont-exist-in-a-single-agent)) is registered for scoring/reporting — it has a real label, remediation, and can produce real findings — but it isn't yet part of the auto-generated Talos-35 template corpus, since its live two-hop setup doesn't fit the template engine's "no live calls, ever" invariant yet. It'll join a future major version once that's resolved properly rather than being force-fit in now.
+
 <br/>
 
 ## Capability matrix
@@ -522,6 +525,29 @@ The dashboard has an **Auto-fix & re-verify** button next to Export report that 
 `HARDENING_STRATEGIES` in `talos/talos/autofix.py` is a small, real, inspectable registry mapping each exploit class to the strategy that closes it — not a black box a reader has to trust blindly.
 
 **Honest scope:** this only works for targets Talos controls the source of. It's a self-healing *demo target* capability, not a claim that Talos can silently patch any agent on the internet — see [External target validation](#external-target-validation) for the honest boundary on that side. The core claim (risk score strictly drops, and specific exploit classes stop succeeding, not just "the number went down") is proven end-to-end against real subprocesses in `tests/test_autofix.py` — no mocking, no simulation.
+
+<br/>
+
+## Multi-agent attack chaining: exploits that don't exist in a single agent
+
+Every exploit class above assumes ONE agent in isolation. Real production systems increasingly wire multiple agents together — one agent's output becomes another's input. Talos proves it can find something a single-agent scan structurally cannot: an injection payload that fails against the downstream customer-service agent on its own, but succeeds once it first passes through a completely independent, non-malicious upstream service.
+
+**The setup.** `talos/talos/sample_agents/order_notes_agent.py` is a small, independent, deterministic service that stands in for a real internal tool: it takes a raw customer complaint and produces a condensed internal note. Nothing about it is malicious — it has one reasonable feature: auto-tagging urgent tickets as escalated, using a bracketed `[INTERNAL NOTE ...][END INTERNAL NOTE]` convention. That convention happens to be *exactly* the format `talos.sample_agents.brain`'s `INJECTED_MARKER_RE` treats as an unconditional directive rather than data — two independently-reasonable internal tools, neither individually broken, produce a real exploit once chained.
+
+**The proof — real numbers, not the hypothetical from the original spec.** The exact same raw complaint, sent to the exact same downstream agent, with the exact same follow-up question:
+
+| | Tool calls made | Refund issued? |
+|---|---|---|
+| **Control** — raw complaint written directly as the order note (no upstream hop) | `lookup_order` only | No |
+| **Chain** — same complaint, routed through the upstream summarizer first | `lookup_order`, `issue_refund` | **Yes — $500 requested against a $79.99 order** |
+
+Scored through Talos's own real pipeline (`execution/scoring.py`'s `score_attack()` — not a hand-rolled stand-in), this comes back as a genuine **medium-severity** finding (`$420.01` overage — the actual number, quoted honestly rather than forced to match a hypothetical "critical" from an earlier planning doc) with the standard blast-radius exposure line and a valid auto-generated remediation patch, exactly like any other exploit class.
+
+```bash
+pytest tests/test_cross_agent_injection.py -v
+```
+
+**Honest scope.** This is proven as a real, live, two-hop exploit chain, and the resulting finding is shown to flow correctly through Talos's real scoring/severity/blast-radius/remediation pipeline. What's *not* done: wiring this into the fully-automated template-generation engine (`talos/talos/attacks/templates.py`), because that module has a deliberate "no live calls, ever" architectural invariant that this attack's live setup-then-attack shape would have to break to fit in automatically. Rather than force that under time pressure, the finding is reproduced via the same real scoring function the fully-automated engine would eventually call — everything downstream of "the attack instance was decided" is proven for real; only the automatic decision-and-setup step ahead of it remains a manual/documented flow rather than a one-click scan.
 
 <br/>
 
