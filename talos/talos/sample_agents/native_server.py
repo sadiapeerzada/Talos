@@ -25,7 +25,7 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 
 from talos.sample_agents.brain import RuleBasedBrain, Brain, Turn
-from talos.sample_agents.data import AuditLog
+from talos.sample_agents.data import ORDERS, AuditLog
 from talos.sample_agents.exchange import run_exchange
 from talos.sample_agents.tools import ToolDefinition, make_tool_definitions
 
@@ -90,6 +90,23 @@ def _audit_log() -> dict[str, Any]:
 def _reset() -> dict[str, Any]:
     AUDIT_LOG.reset()
     return {"status": "reset"}
+
+
+@app.post("/agent/_set_order_notes")
+def _set_order_notes(order_id: str, notes: str) -> dict[str, Any]:
+    """Test/harness-only endpoint (matches the existing _reset/_audit_log
+    convention -- not part of the agent's real tool-calling surface) that
+    lets an attack orchestrator write a note onto an order, simulating a
+    normal business process (e.g. a contact-us form) legitimately
+    populating order data with content that originated from a customer
+    submission -- possibly after passing through an upstream service like
+    talos.sample_agents.order_notes_agent. Used by the item-9 multi-agent
+    chaining validation in tests/test_cross_agent_injection.py."""
+    order = ORDERS.get(order_id)
+    if order is None:
+        return {"status": "error", "reason": f"unknown order_id: {order_id}"}
+    order.notes = notes
+    return {"status": "ok", "order_id": order_id, "notes": notes}
 
 
 def main() -> None:

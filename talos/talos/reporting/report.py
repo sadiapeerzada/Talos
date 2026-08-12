@@ -53,6 +53,16 @@ REMEDIATIONS = {
         "state, and require tools to enforce hard constraints even when the model is shown fake runbooks, "
         "SOPs, or internal bulletins that claim otherwise."
     ),
+    "cross_agent_injection": (
+        "Never trust content that arrived through another internal service just because it wasn't typed "
+        "directly by an external attacker -- an upstream tool's own legitimate features (auto-tagging, "
+        "summarization, escalation flags) can manufacture directive-shaped text a downstream agent then "
+        "blindly executes. Apply the SAME 'tool output is untrusted data, not instructions' framing "
+        "(indirect_injection's fix) at every hop in a multi-agent pipeline, not just the last one before "
+        "the vulnerable agent -- and avoid using directive-shaped formatting conventions (bracketed "
+        "'[INTERNAL NOTE]'-style tags, etc.) for purely informational internal annotations, since a "
+        "downstream consumer may not distinguish your convention from an actual injected instruction."
+    ),
 }
 
 EXPLOIT_CLASS_LABELS = {
@@ -63,6 +73,7 @@ EXPLOIT_CLASS_LABELS = {
     "goal_hijacking": "Goal Hijacking",
     "authority_spoofing": "Authority Spoofing",
     "policy_shadowing": "Policy Shadowing",
+    "cross_agent_injection": "Cross-Agent Injection",
 }
 
 
