@@ -20,7 +20,7 @@
 
 ### [🡒 Try Talos live: talos-red-team.vercel.app](https://talos-red-team.vercel.app)
 
-[The Myth](#the-myth-and-the-thesis) · [Why Talos](#why-talos) · [Architecture](#architecture) · [What It Does](#what-talos-does) · [Live Demo](#live-demo-flow) · [Quick Start](#quick-start) · [Before/After](#before--after-proving-talos-validates-a-fix-not-just-a-break) · [Roadmap](#roadmap) · [Judges' Checklist](#for-the-judges-what-to-look-at-in-5-minutes) · [Full TOC ↓](#-table-of-contents)
+[The Myth](#the-myth-and-the-thesis) · [Why Talos](#why-talos) · [Architecture](#architecture) · [What It Does](#what-talos-does) · [Live Demo](#live-demo-flow) · [Quick Start](#quick-start) · [Before/After](#before--after-proving-talos-validates-a-fix-not-just-a-break) · [Auto-Fix](#auto-fix--re-verify-closing-the-loop-autonomously) · [Roadmap](#roadmap) · [Judges' Checklist](#for-the-judges-what-to-look-at-in-5-minutes) · [Full TOC ↓](#-table-of-contents)
 
 </div>
 
@@ -46,6 +46,7 @@
 - [Web Dashboard](#web-dashboard)
 - [A Real, Non-Fixture Target](#a-real-non-fixture-target-the-groq-backed-agent)
 - [Before / After](#before--after-proving-talos-validates-a-fix-not-just-a-break)
+- [Auto-Fix & Re-Verify](#auto-fix--re-verify-closing-the-loop-autonomously)
 - [Continuous Monitoring](#continuous-monitoring)
 - [Cross-Engagement Learning](#cross-engagement-learning)
 - [CLI Reference](#cli-reference)
@@ -119,9 +120,10 @@ Given a target agent endpoint and an adapter, Talos:
 2. **Discovers the tool graph** — enumerates every tool, infers side effects and effective privilege levels, and identifies direct/indirect injection surfaces.
 3. **Generates graph-aware attacks** from a 35-template library across 7 exploit classes, with an optional **adaptive** mode that refines follow-up attacks from prior results (Anthropic-backed when `ANTHROPIC_API_KEY` is set, deterministic fallback otherwise — so the demo never breaks offline).
 4. **Executes attacks against the live agent** — the real thing, not a simulated proxy — capturing multi-turn traces and repeating runs for reproducibility scoring.
-5. **Scores, deduplicates, and reports** — severity-ranked findings with exact repro steps and tool-specific remediation.
-6. **Monitors continuously** — re-runs full scans on a timer, stores history, and raises local alerts when severity drifts.
-7. **Learns across engagements** — persists which templates and exploit classes actually land, and uses that to prioritize the next scan.
+5. **Scores, deduplicates, and reports** — severity-ranked findings with a weighted risk score (0-100), per-finding blast-radius exposure estimates, exact repro steps, an animated shareable replay, and an auto-generated drop-in remediation patch (not just a text recommendation).
+6. **Closes the loop, autonomously, for targets it controls** — `talos-autofix` applies its own generated hardening to a fresh instance and re-scans to prove the risk score actually dropped, with no human editing code in between.
+7. **Monitors continuously** — re-runs full scans on a timer, stores history, and raises local alerts when severity drifts.
+8. **Learns across engagements** — persists which templates and exploit classes actually land, and uses that to prioritize the next scan.
 
 <br/>
 
@@ -496,6 +498,31 @@ The policy backstop is independently covered by `tests/test_real_agent_hardening
 
 <br/>
 
+## Auto-fix & re-verify: closing the loop autonomously
+
+Most agent red-teaming tools stop at reporting. Talos can go one step further for targets it controls the source of: **scan → find → auto-patch → re-scan → prove the fix held**, fully unattended, no human editing code in between.
+
+```bash
+talos-autofix
+```
+
+This runs the complete cycle against a fresh copy of the native sample agent: scans it (vulnerable), determines which of Talos's own generated hardening strategies apply based on what actually succeeded, spins up a **second, freshly-hardened instance** (`native_server.py --hardened`, wrapping the exact same `PolicyEnforcingBrain` the before/after demo above already proves works — not new magic), re-scans it, and prints the result:
+
+```
+Initial scan:  risk score 100/100 (7 high, 5 medium)
+Applying 7 exploit-class hardening strategies...
+Re-scan:       risk score   0/100 (0 high, 0 medium)
+Risk reduced by 100 points, 12 of 12 findings closed.
+```
+
+The dashboard has an **Auto-fix & re-verify** button next to Export report that streams this same cycle live and automatically drops both runs into the before/after comparison table as `auto-fix: before` / `auto-fix: after` — no manual labeling needed.
+
+`HARDENING_STRATEGIES` in `talos/talos/autofix.py` is a small, real, inspectable registry mapping each exploit class to the strategy that closes it — not a black box a reader has to trust blindly.
+
+**Honest scope:** this only works for targets Talos controls the source of. It's a self-healing *demo target* capability, not a claim that Talos can silently patch any agent on the internet — see [External target validation](#external-target-validation) for the honest boundary on that side. The core claim (risk score strictly drops, and specific exploit classes stop succeeding, not just "the number went down") is proven end-to-end against real subprocesses in `tests/test_autofix.py` — no mocking, no simulation.
+
+<br/>
+
 ## Continuous monitoring
 
 Re-runs the **full** Talos scan on a timer; stores a history of recent runs; keeps the latest structured report ready for the dashboard; persists monitor metadata, run history, and alerts in SQLite; raises local alerts when recurring scans fail or severity counts increase; supports clean stop; works with both `template` and `adaptive` strategies.
@@ -654,11 +681,12 @@ Security-audit SaaS for point-in-time engagements, with a continuous-monitoring 
 ## For the judges: what to look at in 5 minutes
 
 0. **[talos-red-team.vercel.app](https://talos-red-team.vercel.app)** → click through the hosted dashboard, no setup required.
-1. **`talos-dashboard`** (local) → run one scan → watch tools discovered, attacks run, and a critical finding land live.
-2. **Open the finding** → point at the exact attacker prompt and tool-call evidence — this is not a canned string.
-3. **Point at `real_agent_server.py`** → this is a real LLM, not a fixture, and Talos still finds real issues.
-4. **Run the before/after** (`:8002` vs `:8003 --hardened`) → same model, same tools, dramatically fewer criticals — proof Talos measures a real security delta, not noise.
-5. **Glance at `/api/learning/summary`** → this is the flywheel: every scan makes the next one sharper.
+1. **`talos-dashboard`** (local) → run one scan → watch tools discovered, attacks run, and a critical finding land live, with a gold risk-score gauge and per-finding blast-radius exposure.
+2. **Open the finding** → point at the exact attacker prompt and tool-call evidence — this is not a canned string. Click **Replay** for an animated, offline-shareable case-file walkthrough of the exploit, and expand the auto-generated drop-in remediation patch.
+3. **Run `talos-autofix`** → the whole loop, unattended: scan the vulnerable target, apply Talos's own generated hardening to a fresh instance, re-scan, and watch the risk score drop to zero — proof Talos doesn't just report a problem, it closes it and verifies the close.
+4. **Point at `real_agent_server.py`** → this is a real LLM, not a fixture, and Talos still finds real issues.
+5. **Run the before/after** (`:8002` vs `:8003 --hardened`) → same model, same tools, dramatically fewer criticals — proof Talos measures a real security delta, not noise.
+6. **Glance at `/api/learning/summary`** → this is the flywheel: every scan makes the next one sharper.
 
 <br/>
 

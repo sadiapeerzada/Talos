@@ -15,6 +15,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse, PlainTextResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
+from talos.autofix import iter_autofix_progress
 from talos.learning import LearningStore, LearningSummary
 from talos.monitoring import AlertRecord, MonitorConfig, MonitorSnapshot, MonitoringManager
 from talos.replay import render_replay_html
@@ -755,9 +756,17 @@ def _dashboard_html() -> str:
     </section>
 
     <section class="panel">
-      <div class="panel-title" style="display: flex; justify-content: space-between; align-items: center;">
+      <div class="panel-title" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
         <span>Findings</span>
-        <button id="export-report-button" type="button" class="button-secondary" style="width: auto; min-width: 0; padding: 8px 14px; font-size: 0.82rem;" disabled>Export report (.md)</button>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+          <button id="export-report-button" type="button" class="button-secondary" style="width: auto; min-width: 0; padding: 8px 14px; font-size: 0.82rem;" disabled>Export report (.md)</button>
+          <button id="autofix-button" type="button" class="button-secondary" style="width: auto; min-width: 0; padding: 8px 14px; font-size: 0.82rem;" title="Runs against a fresh instance of the native sample agent, regardless of what target was last scanned.">Auto-fix &amp; re-verify</button>
+        </div>
+      </div>
+      <p class="field-hint" style="margin: -8px 0 14px;">Auto-fix always demos against a fresh copy of the native sample agent (item 8) -- it scans it, applies Talos's generated hardening, and re-scans to prove the risk score drops, regardless of what target you last scanned above.</p>
+      <div id="autofix-status" class="hidden" style="margin-bottom: 16px;">
+        <div id="autofix-status-text" class="status-text"></div>
+        <div id="autofix-status-subtext" class="status-subtext"></div>
       </div>
       <p id="findings-empty" class="findings-empty">No findings yet. Run a scan to populate this list.</p>
       <div id="findings-skeleton" class="skeleton hidden">
@@ -835,6 +844,10 @@ def _dashboard_html() -> str:
     const riskGauge = document.getElementById("risk-gauge");
     const heroTotal = document.getElementById("hero-total");
     const exportReportButton = document.getElementById("export-report-button");
+    const autofixButton = document.getElementById("autofix-button");
+    const autofixStatus = document.getElementById("autofix-status");
+    const autofixStatusText = document.getElementById("autofix-status-text");
+    const autofixStatusSubtext = document.getElementById("autofix-status-subtext");
     const criticalCount = document.getElementById("critical-count");
     const highCount = document.getElementById("high-count");
     const mediumCount = document.getElementById("medium-count");
@@ -1192,6 +1205,53 @@ def _dashboard_html() -> str:
       }}
     }}
 
+    async function runAutofix() {{
+      autofixButton.disabled = true;
+      autofixStatus.classList.remove("hidden");
+      autofixStatusText.textContent = "Starting auto-fix & re-verify cycle...";
+      autofixStatusSubtext.textContent = "Scanning a fresh copy of the native sample agent.";
+
+      try {{
+        const response = await fetch("/api/autofix", {{ method: "POST" }});
+        if (!response.ok || !response.body) {{
+          throw new Error(`Request failed with status ${{response.status}}`);
+        }}
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        let finalEvent = null;
+
+        while (true) {{
+          const {{ value, done }} = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, {{ stream: true }});
+          const lines = buffer.split("\\n");
+          buffer = lines.pop() || "";
+          for (const line of lines) {{
+            if (!line.trim()) continue;
+            const event = JSON.parse(line);
+            autofixStatusText.textContent = event.message.split("\\n")[0];
+            autofixStatusSubtext.textContent = event.type;
+            if (event.type === "completed") finalEvent = event;
+            if (event.type === "error") throw new Error(event.message);
+          }}
+        }}
+
+        if (finalEvent) {{
+          autofixStatusText.textContent = "Auto-fix & re-verify complete.";
+          autofixStatusSubtext.textContent = finalEvent.message.split("\\n").join(" -- ");
+          recordLabeledRun("auto-fix: before", "native sample agent (vulnerable)", finalEvent.baseline_report);
+          recordLabeledRun("auto-fix: after", "native sample agent (hardened)", finalEvent.hardened_report);
+        }}
+      }} catch (error) {{
+        autofixStatusText.textContent = "Auto-fix failed.";
+        autofixStatusSubtext.textContent = error.message;
+      }} finally {{
+        autofixButton.disabled = false;
+      }}
+    }}
+
     async function runScan(event) {{
       event.preventDefault();
       runButton.disabled = true;
@@ -1483,6 +1543,7 @@ def _dashboard_html() -> str:
 
     form.addEventListener("submit", runScan);
     exportReportButton.addEventListener("click", exportReport);
+    autofixButton.addEventListener("click", runAutofix);
     startMonitorButton.addEventListener("click", startMonitor);
     stopMonitorButton.addEventListener("click", stopMonitor);
     refreshAlerts().catch(() => {{}});
@@ -1534,6 +1595,25 @@ def download_replay_html(finding: ReportFinding) -> HTMLResponse:
         content=replay_html,
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+
+@app.post("/api/autofix")
+def run_autofix() -> StreamingResponse:
+    """Streams the item-8 auto-patch-and-reverify loop: scans the native
+    sample agent, spins up a freshly-hardened instance
+    (native_server.py --hardened, wrapping the same PolicyEnforcingBrain
+    already proven in tests/test_real_agent_hardening.py), re-scans it,
+    and streams both real reports plus the risk-score delta -- same
+    newline-delimited-JSON streaming pattern as /api/scans."""
+
+    def stream() -> Iterator[str]:
+        try:
+            for event in iter_autofix_progress():
+                yield json.dumps(event) + "\n"
+        except Exception as exc:
+            yield json.dumps({"type": "error", "message": str(exc)}) + "\n"
+
+    return StreamingResponse(stream(), media_type="application/x-ndjson")
 
 
 @app.get("/healthz")
