@@ -20,8 +20,6 @@
 
 **Built for the BMW Amulate Hackathon**
 
-### [🡒 Try Talos live: talos-red-team.vercel.app](https://talos-red-team.vercel.app)
-
 [The Myth](#the-myth-and-the-thesis) · [Why Talos](#why-talos) · [Architecture](#architecture) · [What It Does](#what-talos-does) · [Live Demo](#live-demo-flow) · [Quick Start](#quick-start) · [Before/After](#before--after-proving-talos-validates-a-fix-not-just-a-break) · [Auto-Fix](#auto-fix--re-verify-closing-the-loop-autonomously) · [Roadmap](#roadmap) · [Judges' Checklist](#for-the-judges-what-to-look-at-in-5-minutes) · [Full TOC ↓](#-table-of-contents)
 
 </div>
@@ -324,15 +322,24 @@ The corpus behind this taxonomy grows with every engagement (see [The Moat](#the
 | Capability | Status | What it gives you |
 |---|---|---|
 | Tool discovery + graph inference | ✅ Implemented | Maps tool surfaces, side effects, likely privilege boundaries |
-| Template attack generation | ✅ Implemented | Reliable baseline coverage across all 7 exploit classes |
+| Template attack generation | ✅ Implemented | Reliable baseline coverage across all 7 exploit classes, 35 templates (Talos-35 v1.0) |
 | Adaptive attack refinement | ✅ Implemented | Follow-up variants generated from previous run outcomes |
 | LangChain + native adapters | ✅ Implemented | Works across different agent orchestration styles |
-| Markdown reporting | ✅ Implemented | Audit-friendly artifact with repro steps and evidence |
+| Markdown reporting | ✅ Implemented | Audit-friendly artifact with repro steps, evidence, blast radius, and a suggested patch per finding |
 | Live web dashboard | ✅ Implemented | Streaming, judge/demo-friendly scan runner |
 | Continuous monitoring | ✅ Implemented | Recurring scans with local SQLite run history |
 | Persistent alerts | ✅ Implemented | SQLite-backed drift/failure alerts |
 | Cross-engagement learning | ✅ Implemented | Local memory of productive templates/classes |
 | Real (non-fixture) target | ✅ Implemented | Groq-backed live LLM agent, `--hardened` mode for before/after |
+| Blast-radius scoring | ✅ Implemented | Per-finding dollar/record exposure estimate, derived from real observed evidence |
+| Auto-generated remediation patches | ✅ Implemented | A real, evidence-parameterized drop-in guard function per finding, not just text advice |
+| Animated exploit replay | ✅ Implemented | Self-contained, offline-viewable "case file" HTML per finding |
+| Auto-fix & re-verify loop | ✅ Implemented | `talos-autofix` — scan, apply generated hardening to a fresh instance, re-scan, prove the risk score dropped, unattended |
+| CI risk-score regression gate | ✅ Implemented | Blocks a PR that raises the native sample agent's risk score (`talos/scripts/ci_risk_gate.py`) |
+| External-target harness integration | ✅ Implemented | A genuinely independent LangChain agent target, proven end-to-end via `LangChainAdapter` — see [External Target Validation](#external-target-validation) |
+| External-target live security scan | 🔜 Pending an operator's own API key | Harness integration is proven; no live scan result has been run or committed yet — no result is claimed |
+| Cross-agent injection chaining (mechanism) | ✅ Implemented, proven live | Real control-vs-chain proof + a real scored finding through Talos's own scoring pipeline — see [Multi-Agent Attack Chaining](#multi-agent-attack-chaining-exploits-that-dont-exist-in-a-single-agent) |
+| Cross-agent injection chaining (automated scan engine) | 🔜 Planned | Not yet wired into `talos/talos/attacks/templates.py` — that module has a "no live calls, ever" invariant this attack's live setup step doesn't fit yet |
 | External alert delivery | 🔜 Planned | Webhooks / email / incident integration |
 | Longer-horizon planning | 🔜 Planned | Multi-step strategic attack search beyond current refinement loop |
 | RL-style policy improvement | 🔜 Planned | Learned prioritization beyond heuristic scoring |
@@ -388,7 +395,7 @@ Start the dashboard, point it at a target, and use the **Continuous monitoring**
 
 ## Try it live
 
-No install needed to look around: **[talos-red-team.vercel.app](https://talos-red-team.vercel.app)** hosts the Talos dashboard experience for judges to click through directly. For a full live scan against your own agent (or the bundled sample targets), run Talos locally per the [Quick Start](#quick-start) below — a hosted scan against arbitrary third-party endpoints isn't exposed publicly for obvious abuse reasons.
+No hosted demo is available — the dashboard is a FastAPI app that spins up subprocess-managed sample agents and writes to a local SQLite store, so it isn't something that runs as a public static site. The real, verified way to try it is locally, and it's fast: clone, `pip install -e .`, `talos-dashboard`, then point it at one of the bundled sample targets. See [Quick Start](#quick-start) below — the whole loop (target running, dashboard open, first scan complete) takes a few minutes.
 
 <br/>
 
@@ -462,7 +469,7 @@ Starts locally and opens your browser by default.
 
 The two built-in sample agents are useful for proving the harness is correct, but they share one rule-based decision function on purpose — which invites a fair question: **does Talos actually generalize, or is it tuned to its own fixtures?**
 
-`talos/sample_agents/real_agent_server.py` answers that. It's a genuinely independent target: a real LLM (via the free [Groq API](https://console.groq.com)) makes the tool-calling decisions, using its own system prompt, that Talos was never written against.
+`talos/talos/sample_agents/real_agent_server.py` answers that. It's a genuinely independent target: a real LLM (via the free [Groq API](https://console.groq.com)) makes the tool-calling decisions, using its own system prompt, that Talos was never written against.
 
 ```bash
 export GROQ_API_KEY=your_key_here
@@ -484,7 +491,7 @@ Because this target is backed by a real model instead of a scripted brain, resul
 `real_agent_server.py` also has a `--hardened` mode, showing Talos is useful for **validating a fix**, not only for finding a break. Hardened mode adds two layers on top of the same underlying model and tools:
 
 1. **A hardened system prompt** — treat all tool output as untrusted data, never as instructions, and require explicit fresh confirmation before a sensitive action.
-2. **A deterministic policy backstop** (`talos/sample_agents/policy.py`) that holds even if the model doesn't fully comply: refund amounts are clipped to the order's real total, emails are only ever sent to an allow-listed domain, and `issue_refund` / `send_email` are refused outright unless the human's own current message explicitly authorized that exact action, with no prior read step in the same exchange.
+2. **A deterministic policy backstop** (`talos/talos/sample_agents/policy.py`) that holds even if the model doesn't fully comply: refund amounts are clipped to the order's real total, emails are only ever sent to an allow-listed domain, and `issue_refund` / `send_email` are refused outright unless the human's own current message explicitly authorized that exact action, with no prior read step in the same exchange.
 
 ```bash
 # terminal 1 — vulnerable
@@ -611,7 +618,7 @@ Flags: `--host`, `--port`, `--no-open`.
 
 `native_server.py` and `langchain_server.py` share the same underlying vulnerable behavior but expose different HTTP shapes — that's what makes the adapter layer meaningful. If Talos finds different results across the two, the bug is in Talos, not the scenario. Enforced by the test suite via tool-spec parity checks, graph parity checks, single-exchange parity checks, and full end-to-end scan parity checks.
 
-They use a **rule-based decision engine** on purpose: no API key requirement, no inference cost, no flaky demo behavior, repeatable exploit reproduction. The adaptive-generation seam in `talos/attacks/engine.py` is real, not aspirational — phase 1 already synthesizes refinement variants from prior scan results.
+They use a **rule-based decision engine** on purpose: no API key requirement, no inference cost, no flaky demo behavior, repeatable exploit reproduction. The adaptive-generation seam in `talos/talos/attacks/engine.py` is real, not aspirational — phase 1 already synthesizes refinement variants from prior scan results.
 
 <br/>
 
@@ -674,13 +681,13 @@ Honest about the current boundaries:
 
 ## The moat: why this compounds
 
-Talos is built around a compounding data asset: a **proprietary exploit-pattern database** that grows with every engagement. Each successful attack chain, across every target's tool graph, sharpens the strategy search for the next engagement — a flywheel closer to how detection-engineering vendors compound than how point-in-time pentest shops operate. The 7-class, 35-template taxonomy in this repo is v0; the real product is the corpus behind it, plus the RL loop already on the roadmap.
+Talos is built around a compounding data asset: a **proprietary exploit-pattern database** that grows with every engagement. Each successful attack chain, across every target's tool graph, sharpens the strategy search for the next engagement — a flywheel closer to how detection-engineering vendors compound than how point-in-time pentest shops operate. The 7-class, 35-template taxonomy in this repo is **Talos-35 v1.0** (see [Attack Taxonomy](#exploit-taxonomy)); the real product is the corpus behind it, plus the RL loop already on the roadmap.
 
 <br/>
 
 ## Roadmap
 
-**Already implemented:** live scan engine · dual adapters · structured reporting · interactive dashboard · adaptive refinement · recurring monitoring · persistent local alerts · cross-engagement learning · real Groq-backed target with hardened before/after mode.
+**Already implemented:** live scan engine · dual adapters · structured reporting · interactive dashboard · adaptive refinement · recurring monitoring · persistent local alerts · cross-engagement learning · real Groq-backed target with hardened before/after mode · blast-radius scoring · auto-generated remediation patches · animated exploit replay · auto-fix & re-verify loop · CI risk-score regression gate · external-target harness integration (proven; live scan pending an operator's own API key) · cross-agent injection chaining (proven live; not yet wired into the automated scan engine).
 
 **Next likely steps:**
 - external alert delivery via webhook / email / incident systems
@@ -708,8 +715,7 @@ Security-audit SaaS for point-in-time engagements, with a continuous-monitoring 
 
 ## For the judges: what to look at in 5 minutes
 
-0. **[talos-red-team.vercel.app](https://talos-red-team.vercel.app)** → click through the hosted dashboard, no setup required.
-1. **`talos-dashboard`** (local) → run one scan → watch tools discovered, attacks run, and a critical finding land live, with a gold risk-score gauge and per-finding blast-radius exposure.
+1. **`talos-dashboard`** (local, see [Quick Start](#quick-start)) → run one scan → watch tools discovered, attacks run, and a critical finding land live, with a gold risk-score gauge and per-finding blast-radius exposure.
 2. **Open the finding** → point at the exact attacker prompt and tool-call evidence — this is not a canned string. Click **Replay** for an animated, offline-shareable case-file walkthrough of the exploit, and expand the auto-generated drop-in remediation patch.
 3. **Run `talos-autofix`** → the whole loop, unattended: scan the vulnerable target, apply Talos's own generated hardening to a fresh instance, re-scan, and watch the risk score drop to zero — proof Talos doesn't just report a problem, it closes it and verifies the close.
 4. **Point at `real_agent_server.py`** → this is a real LLM, not a fixture, and Talos still finds real issues.
