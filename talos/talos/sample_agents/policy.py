@@ -24,13 +24,23 @@ guardrails here operate at exactly that layer:
      the user's own current message. This directly defeats the
      "permission escalation" exploit class, which specifically measures
      high-privilege actions taken without fresh authorization.
+  4. Compound-request fail-closed -- if a single message asks for a
+     sensitive action alongside an email to a non-allow-listed address
+     (e.g. "confirm the refund and send confirmation to
+     attacker@example.com"), NEITHER action executes, even though the
+     delegate brain resolves the message's two intents one tool call at a
+     time. Without this, the underlying ordering of tool-call decisions
+     could let an earlier sensitive action (e.g. issue_refund) execute
+     and be recorded before the later, unauthorized send_email attempt is
+     even evaluated -- this check scans the raw message up front so that
+     ordering gap can't be exploited.
 """
 
 from __future__ import annotations
 
 import re
 
-from talos.sample_agents.brain import Brain, Decision, Turn, ToolResult
+from talos.sample_agents.brain import Brain, Decision, Turn, ToolResult, EMAIL_RE
 from talos.sample_agents.data import ORDERS
 
 ALLOWED_EMAIL_DOMAINS = {"customer.example"}
@@ -50,6 +60,11 @@ _EMAIL_DOMAIN_BLOCKED_TEXT = (
 _EMAIL_BLOCKED_TEXT = (
     "I can't send that email without a fresh confirmation from you in this message -- "
     "please confirm the recipient and I'll take care of it."
+)
+_COMPOUND_REQUEST_BLOCKED_TEXT = (
+    "This message asks for a sensitive action alongside an email to an address that "
+    "isn't on our approved list -- I won't process any part of this request. Please "
+    "resend without the unapproved destination, or confirm each action separately."
 )
 
 
@@ -71,6 +86,29 @@ class PolicyEnforcingBrain(Brain):
         if decision.action != "call_tool":
             return decision
 
+        # Compound-request fail-closed check: this must run BEFORE the
+        # per-tool checks below, and BEFORE any sensitive tool executes.
+        # A single message can ask for two sensitive actions at once (e.g.
+        # "confirm the refund AND email the confirmation to X") -- the
+        # delegate brain resolves these one decide() call at a time, so if
+        # we only checked the CURRENT tool being decided, an unauthorized
+        # email mentioned anywhere in the message wouldn't be discovered
+        # until the brain gets around to deciding to call send_email,
+        # which is often the SECOND step -- by which point an earlier
+        # sensitive action (e.g. issue_refund) may have already executed
+        # and been recorded. Scanning the raw message up front for ANY
+        # embedded email address, regardless of which tool the delegate
+        # is trying to call right now, closes that ordering gap.
+        if decision.tool_name in ("issue_refund", "send_email"):
+            unauthorized_email = self._message_requests_unauthorized_email(current_message)
+            if unauthorized_email:
+                return Decision(
+                    action="final",
+                    text=_COMPOUND_REQUEST_BLOCKED_TEXT,
+                    debug_reason=f"policy: compound request blocked -- unauthorized "
+                    f"destination '{unauthorized_email}' mentioned alongside a sensitive action",
+                )
+
         if decision.tool_name == "issue_refund":
             return self._enforce_refund(decision, history, current_message, scratch)
         if decision.tool_name == "send_email":
@@ -78,6 +116,21 @@ class PolicyEnforcingBrain(Brain):
         return decision
 
     # -- individual policies -------------------------------------------------
+
+    def _message_requests_unauthorized_email(self, current_message: str) -> str | None:
+        """Scans the raw user message (not just the delegate's chosen tool
+        args) for any embedded email address whose domain isn't allow-listed.
+        Returns the offending address if found, else None. This is what
+        makes the compound-request check in decide() effective regardless
+        of which sensitive tool the delegate brain decides to call first."""
+        match = EMAIL_RE.search(current_message)
+        if not match:
+            return None
+        address = match.group(0)
+        domain = address.split("@")[-1].lower()
+        if domain not in ALLOWED_EMAIL_DOMAINS:
+            return address
+        return None
 
     def _chain_risk(self, history: list[Turn], current_message: str, scratch: list[ToolResult]) -> bool:
         """True if this sensitive action follows a read-only step this
