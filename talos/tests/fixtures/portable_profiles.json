@@ -1,0 +1,800 @@
+{
+  "test_only": true,
+  "not_empirical": true,
+  "profiles": [
+    {
+      "profile_version": "talos.target-profile.v2.0",
+      "target_id": "documents",
+      "domain": "synthetic-documents",
+      "fixture_id": "test-only-documents",
+      "evidence": [
+        {
+          "evidence_id": "metadata",
+          "source_id": "synthetic-test-author",
+          "reference": "tests/fixtures/portable_profiles.json#documents",
+          "origin": "operator_declaration",
+          "detail": "Synthetic control only; not an independent target or research approval."
+        }
+      ],
+      "tools": [
+        {
+          "name": "copper_01",
+          "description": "Synthetic test-only declared operation.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "selector": {
+                "type": "string"
+              }
+            }
+          },
+          "output_schema": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "snippet": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "evidence_ids": [
+            "metadata"
+          ],
+          "effects": [
+            {
+              "effect": "read_only",
+              "evidence_ids": [
+                "metadata"
+              ]
+            },
+            {
+              "effect": "read_untrusted",
+              "evidence_ids": [
+                "metadata"
+              ]
+            }
+          ],
+          "permissions": [
+            {
+              "permission": "authenticated",
+              "boundary_ids": [
+                "boundary"
+              ],
+              "evidence_ids": [
+                "metadata"
+              ]
+            }
+          ],
+          "output_trust": [
+            {
+              "trust": "untrusted",
+              "evidence_ids": [
+                "metadata"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "copper_02",
+          "description": "Synthetic test-only declared operation.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "share": {
+                "type": "object",
+                "properties": {
+                  "recipients": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "output_schema": {
+            "type": "object",
+            "properties": {
+              "text": {
+                "type": "string"
+              }
+            }
+          },
+          "evidence_ids": [
+            "metadata"
+          ],
+          "effects": [
+            {
+              "effect": "state_changing",
+              "evidence_ids": [
+                "metadata"
+              ]
+            },
+            {
+              "effect": "external_send",
+              "evidence_ids": [
+                "metadata"
+              ]
+            }
+          ],
+          "permissions": [
+            {
+              "permission": "privileged",
+              "boundary_ids": [
+                "boundary"
+              ],
+              "evidence_ids": [
+                "metadata"
+              ]
+            }
+          ],
+          "output_trust": [
+            {
+              "trust": "trusted",
+              "evidence_ids": [
+                "metadata"
+              ]
+            }
+          ],
+          "audit_capability_ids": [
+            "audit"
+          ]
+        },
+        {
+          "name": "copper_03",
+          "description": "Synthetic test-only declared operation.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "payload": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "payload"
+            ]
+          },
+          "output_schema": {
+            "type": "object",
+            "properties": {
+              "text": {
+                "type": "string"
+              }
+            }
+          },
+          "evidence_ids": [
+            "metadata"
+          ],
+          "effects": [
+            {
+              "effect": "read_only",
+              "evidence_ids": [
+                "metadata"
+              ]
+            },
+            {
+              "effect": "sensitive_read",
+              "evidence_ids": [
+                "metadata"
+              ]
+            }
+          ],
+          "permissions": [
+            {
+              "permission": "privileged",
+              "boundary_ids": [
+                "boundary"
+              ],
+              "evidence_ids": [
+                "metadata"
+              ]
+            }
+          ],
+          "output_trust": [
+            {
+              "trust": "trusted",
+              "evidence_ids": [
+                "metadata"
+              ]
+            }
+          ]
+        }
+      ],
+      "authorization_boundaries": [
+        {
+          "boundary_id": "boundary",
+          "description": "Synthetic test-only boundary.",
+          "policy_id": "test-policy",
+          "policy_version": "1",
+          "rule_id": "test-rule",
+          "evidence_ids": [
+            "metadata"
+          ]
+        }
+      ],
+      "audit_capabilities": [
+        {
+          "capability_id": "audit",
+          "source_id": "synthetic-test-audit",
+          "kind": "audit",
+          "can_observe_commit": true,
+          "can_attest_no_effect": true,
+          "action_digest_binding": true,
+          "description": "Test-only capability declaration; no trust approval.",
+          "evidence_ids": [
+            "metadata"
+          ]
+        }
+      ],
+      "state_reset_description": "Synthetic description only; no executable reset supplied.",
+      "possible_flows": [
+        {
+          "flow_id": "declared-context",
+          "source_tool": "copper_01",
+          "target_tool": "copper_02",
+          "description": "Synthetic possible snippet-to-share relationship, not observed.",
+          "evidence_ids": [
+            "metadata"
+          ]
+        }
+      ]
+    },
+    {
+      "profile_version": "talos.target-profile.v2.0",
+      "target_id": "operations",
+      "domain": "synthetic-operations",
+      "fixture_id": "test-only-operations",
+      "evidence": [
+        {
+          "evidence_id": "metadata",
+          "source_id": "synthetic-test-author",
+          "reference": "tests/fixtures/portable_profiles.json#operations",
+          "origin": "operator_declaration",
+          "detail": "Synthetic control only; not an independent target or research approval."
+        }
+      ],
+      "tools": [
+        {
+          "name": "lumen_alpha",
+          "description": "Synthetic test-only declared operation.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "query": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "integer"
+                  }
+                ]
+              }
+            }
+          },
+          "output_schema": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "entries": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          "evidence_ids": [
+            "metadata"
+          ],
+          "effects": [
+            {
+              "effect": "read_only",
+              "evidence_ids": [
+                "metadata"
+              ]
+            },
+            {
+              "effect": "sensitive_read",
+              "evidence_ids": [
+                "metadata"
+              ]
+            }
+          ],
+          "permissions": [
+            {
+              "permission": "privileged",
+              "boundary_ids": [
+                "boundary"
+              ],
+              "evidence_ids": [
+                "metadata"
+              ]
+            }
+          ],
+          "output_trust": [
+            {
+              "trust": "mixed",
+              "evidence_ids": [
+                "metadata"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "lumen_beta",
+          "description": "Synthetic test-only declared operation.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "patches": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "replacement": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "output_schema": {
+            "type": "object",
+            "properties": {
+              "text": {
+                "type": "string"
+              }
+            }
+          },
+          "evidence_ids": [
+            "metadata"
+          ],
+          "effects": [
+            {
+              "effect": "privileged_write",
+              "evidence_ids": [
+                "metadata"
+              ]
+            }
+          ],
+          "permissions": [
+            {
+              "permission": "privileged",
+              "boundary_ids": [
+                "boundary"
+              ],
+              "evidence_ids": [
+                "metadata"
+              ]
+            }
+          ],
+          "output_trust": [
+            {
+              "trust": "trusted",
+              "evidence_ids": [
+                "metadata"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "lumen_gamma",
+          "description": "Synthetic test-only declared operation.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "amount": {
+                "type": "number"
+              },
+              "account_key": {
+                "type": "string"
+              }
+            }
+          },
+          "output_schema": {
+            "type": "object",
+            "properties": {
+              "text": {
+                "type": "string"
+              }
+            }
+          },
+          "evidence_ids": [
+            "metadata"
+          ],
+          "effects": [
+            {
+              "effect": "financial_write",
+              "evidence_ids": [
+                "metadata"
+              ]
+            }
+          ],
+          "permissions": [
+            {
+              "permission": "privileged",
+              "boundary_ids": [
+                "boundary"
+              ],
+              "evidence_ids": [
+                "metadata"
+              ]
+            }
+          ],
+          "output_trust": [
+            {
+              "trust": "trusted",
+              "evidence_ids": [
+                "metadata"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "lumen_delta",
+          "description": "Synthetic test-only declared operation.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "payload": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "payload"
+            ]
+          },
+          "output_schema": {
+            "type": "object",
+            "properties": {
+              "text": {
+                "type": "string"
+              }
+            }
+          },
+          "evidence_ids": [
+            "metadata"
+          ],
+          "effects": [
+            {
+              "effect": "external_communication",
+              "evidence_ids": [
+                "metadata"
+              ]
+            }
+          ],
+          "permissions": [
+            {
+              "permission": "authenticated",
+              "boundary_ids": [
+                "boundary"
+              ],
+              "evidence_ids": [
+                "metadata"
+              ]
+            }
+          ],
+          "output_trust": [
+            {
+              "trust": "trusted",
+              "evidence_ids": [
+                "metadata"
+              ]
+            }
+          ]
+        }
+      ],
+      "authorization_boundaries": [
+        {
+          "boundary_id": "boundary",
+          "description": "Synthetic test-only boundary.",
+          "policy_id": "test-policy",
+          "policy_version": "1",
+          "rule_id": "test-rule",
+          "evidence_ids": [
+            "metadata"
+          ]
+        }
+      ],
+      "audit_capabilities": [
+        {
+          "capability_id": "audit",
+          "source_id": "synthetic-test-audit",
+          "kind": "audit",
+          "can_observe_commit": true,
+          "can_attest_no_effect": true,
+          "action_digest_binding": true,
+          "description": "Test-only capability declaration; no trust approval.",
+          "evidence_ids": [
+            "metadata"
+          ]
+        }
+      ],
+      "state_reset_description": "Synthetic description only; no executable reset supplied."
+    },
+    {
+      "profile_version": "talos.target-profile.v2.0",
+      "target_id": "ambiguous",
+      "domain": "synthetic-ambiguous",
+      "fixture_id": "test-only-ambiguous",
+      "evidence": [
+        {
+          "evidence_id": "metadata",
+          "source_id": "synthetic-test-author",
+          "reference": "tests/fixtures/portable_profiles.json#ambiguous",
+          "origin": "operator_declaration",
+          "detail": "Synthetic control only; not an independent target or research approval."
+        }
+      ],
+      "tools": [
+        {
+          "name": "lookup_safe_readonly",
+          "description": "Claims safe read-only in prose; permissions unstated.",
+          "input_schema": {},
+          "output_schema": {},
+          "evidence_ids": [
+            "metadata"
+          ],
+          "effects": [],
+          "permissions": [],
+          "output_trust": []
+        },
+        {
+          "name": "odd",
+          "description": "Synthetic test-only declared operation.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "payload": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "payload"
+            ]
+          },
+          "output_schema": {
+            "type": "object",
+            "properties": {
+              "text": {
+                "type": "string"
+              }
+            }
+          },
+          "evidence_ids": [
+            "metadata"
+          ],
+          "effects": [
+            {
+              "effect": "read_only",
+              "evidence_ids": [
+                "metadata"
+              ]
+            },
+            {
+              "effect": "state_changing",
+              "evidence_ids": [
+                "metadata"
+              ]
+            }
+          ],
+          "permissions": [
+            {
+              "permission": "public",
+              "boundary_ids": [
+                "boundary"
+              ],
+              "evidence_ids": [
+                "metadata"
+              ]
+            },
+            {
+              "permission": "privileged",
+              "boundary_ids": [
+                "boundary"
+              ],
+              "evidence_ids": [
+                "metadata"
+              ]
+            }
+          ],
+          "output_trust": [
+            {
+              "trust": "trusted",
+              "evidence_ids": [
+                "metadata"
+              ]
+            },
+            {
+              "trust": "untrusted",
+              "evidence_ids": [
+                "metadata"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "boundary_missing_version",
+          "description": "Synthetic test-only declared operation.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "payload": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "payload"
+            ]
+          },
+          "output_schema": {
+            "type": "object",
+            "properties": {
+              "text": {
+                "type": "string"
+              }
+            }
+          },
+          "evidence_ids": [
+            "metadata"
+          ],
+          "effects": [
+            {
+              "effect": "read_only",
+              "evidence_ids": [
+                "metadata"
+              ]
+            }
+          ],
+          "permissions": [
+            {
+              "permission": "authenticated",
+              "boundary_ids": [
+                "boundary"
+              ],
+              "evidence_ids": [
+                "metadata"
+              ]
+            }
+          ],
+          "output_trust": [
+            {
+              "trust": "unknown",
+              "evidence_ids": [
+                "metadata"
+              ]
+            }
+          ]
+        }
+      ],
+      "authorization_boundaries": [
+        {
+          "boundary_id": "boundary",
+          "description": "Synthetic test-only boundary.",
+          "policy_id": "test-policy",
+          "rule_id": "test-rule",
+          "evidence_ids": [
+            "metadata"
+          ]
+        }
+      ],
+      "audit_capabilities": [
+        {
+          "capability_id": "audit",
+          "source_id": "synthetic-test-audit",
+          "kind": "audit",
+          "can_observe_commit": true,
+          "can_attest_no_effect": true,
+          "action_digest_binding": true,
+          "description": "Test-only capability declaration; no trust approval.",
+          "evidence_ids": [
+            "metadata"
+          ]
+        }
+      ],
+      "state_reset_description": "Synthetic description only; no executable reset supplied."
+    }
+  ],
+  "expected_classifications": {
+    "documents": {
+      "copper_01": {
+        "side_effects": [
+          "read_only"
+        ],
+        "permission": "authenticated",
+        "roles": [
+          "read_untrusted"
+        ]
+      },
+      "copper_02": {
+        "side_effects": [
+          "external_communication",
+          "state_changing"
+        ],
+        "permission": "privileged",
+        "roles": [
+          "external_send"
+        ]
+      },
+      "copper_03": {
+        "side_effects": [
+          "read_only"
+        ],
+        "permission": "privileged",
+        "roles": [
+          "sensitive_read"
+        ]
+      }
+    },
+    "operations": {
+      "lumen_alpha": {
+        "side_effects": [
+          "read_only"
+        ],
+        "permission": "privileged",
+        "roles": [
+          "sensitive_read"
+        ]
+      },
+      "lumen_beta": {
+        "side_effects": [
+          "state_changing"
+        ],
+        "permission": "privileged",
+        "roles": [
+          "privileged_write"
+        ]
+      },
+      "lumen_gamma": {
+        "side_effects": [
+          "state_changing"
+        ],
+        "permission": "privileged",
+        "roles": [
+          "financial_write"
+        ]
+      },
+      "lumen_delta": {
+        "side_effects": [
+          "external_communication"
+        ],
+        "permission": "authenticated",
+        "roles": []
+      }
+    },
+    "ambiguous": {
+      "lookup_safe_readonly": {
+        "side_effects": [
+          "unknown"
+        ],
+        "permission": "unknown",
+        "roles": []
+      },
+      "odd": {
+        "side_effects": [
+          "unknown"
+        ],
+        "permission": "unknown",
+        "roles": []
+      },
+      "boundary_missing_version": {
+        "side_effects": [
+          "read_only"
+        ],
+        "permission": "unknown",
+        "roles": []
+      }
+    }
+  }
+}
