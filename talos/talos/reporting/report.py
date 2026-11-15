@@ -84,6 +84,8 @@ class SeverityCounts(BaseModel):
     low: int = 0
 
 
+LEGACY_RISK_VERSION = "talos.risk.severity-sum.v1"
+
 RISK_SCORE_WEIGHTS = {"critical": 25, "high": 12, "medium": 5, "low": 2}
 
 
@@ -103,6 +105,10 @@ def compute_risk_score(counts: SeverityCounts) -> int:
         + counts.low * RISK_SCORE_WEIGHTS["low"]
     )
     return max(0, min(100, raw))
+
+
+# Explicit legacy name; existing consumers/output fields retain their meaning.
+risk_score_legacy = compute_risk_score
 
 
 class ReportStats(BaseModel):

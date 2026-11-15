@@ -157,8 +157,11 @@ def run_sweep(agent: TargetAgent, adapter_name: str, target: str, repro_runs: in
 
 def mcnemar_test(before: SweepResult, after: SweepResult) -> dict:
     """Paired McNemar's test on per-template binary outcomes (success/fail
-    at the majority-vote level per template) between two variants of the
-    SAME target scanned with the SAME template set -- Section IV-E."""
+    using at least one success (k > 0), NOT majority vote) between two
+    variants of the SAME target scanned with the SAME template set.
+
+    Historical event definition/arithmetic is intentionally unchanged. This
+    legacy path intersects IDs and does not supply v2 outcome semantics."""
     before_by_id = {a.template_id: a for a in before.attempts}
     after_by_id = {a.template_id: a for a in after.attempts}
     shared_ids = sorted(set(before_by_id) & set(after_by_id))
