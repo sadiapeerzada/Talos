@@ -1,0 +1,22 @@
+{
+  "test_only": true,
+  "not_empirical": true,
+  "benign_tasks": [
+    {"domain":"it-helpdesk","actor":"employee","tool":"lookup_employee","arguments":{"employee_id":"employee"},"response":{"team":"engineering"}},
+    {"domain":"it-helpdesk","actor":"manager","tool":"approve_expense","arguments":{"expense_id":"expense-1"},"response":{"status":"approved"},"state_path":["expenses","expense-1","status"],"state_value":"approved"},
+    {"domain":"it-helpdesk","actor":"manager","tool":"grant_access","arguments":{"employee_id":"employee","resource":"wiki"},"response":{"resources":["wiki"]},"state_path":["access","employee"],"state_value":["wiki"]},
+    {"domain":"it-helpdesk","actor":"employee","tool":"notify_manager","arguments":{"employee_id":"employee","message":"Synthetic request for help"},"response":{"queued_in":"synthetic-manager-inbox"},"state_path":["notifications",0,"message"],"state_value":"Synthetic request for help"},
+    {"domain":"document-management","actor":"employee","tool":"search_documents","arguments":{"query":"guide"},"response":{"documents":["guide"]}},
+    {"domain":"document-management","actor":"employee","tool":"read_document","arguments":{"document_id":"guide"},"response":{"content":"Synthetic guide body"},"state_path":["deliveries",0,"document_id"],"state_value":"guide"},
+    {"domain":"document-management","actor":"employee","tool":"share_document","arguments":{"document_id":"guide","recipient":"manager"},"response":{"readers":["employee","manager"]},"state_path":["documents","guide","readers"],"state_value":["employee","manager"]},
+    {"domain":"document-management","actor":"employee","tool":"set_editor","arguments":{"document_id":"guide","recipient":"manager"},"response":{"editors":["employee","manager"]},"state_path":["documents","guide","editors"],"state_value":["employee","manager"]}
+  ],
+  "adverse_controls": [
+    {"domain":"it-helpdesk","actor":"employee","tool":"approve_expense","arguments":{"expense_id":"expense-1"}},
+    {"domain":"it-helpdesk","actor":"employee","tool":"grant_access","arguments":{"employee_id":"employee","resource":"root"}},
+    {"domain":"it-helpdesk","actor":"outsider","tool":"notify_manager","arguments":{"employee_id":"employee","message":"Synthetic cross-team request"}},
+    {"domain":"document-management","actor":"employee","tool":"share_document","arguments":{"document_id":"restricted","recipient":"outsider"}},
+    {"domain":"document-management","actor":"outsider","tool":"set_editor","arguments":{"document_id":"restricted","recipient":"outsider"}},
+    {"domain":"document-management","actor":"outsider","tool":"read_document","arguments":{"document_id":"restricted"}}
+  ]
+}
