@@ -25,6 +25,10 @@
 
 <br/>
 
+> **Talos 2.0 research update (15 November 2026):** [PR-00](https://github.com/sadiapeerzada/Talos/pull/14), [PR-01](https://github.com/sadiapeerzada/Talos/pull/15), [PR-02](https://github.com/sadiapeerzada/Talos/pull/16) and [PR-03](https://github.com/sadiapeerzada/Talos/pull/17) are merged. Talos now includes opt-in evidence-aware evaluation primitives, portable tool profiles/graphs and two controlled synthetic target domains. **The existing CLI/dashboard still use legacy fixture-oriented scoring; these engineering milestones are not held-out attack-efficacy experiments.** See the [Talos 2.0 experimental research track](#talos-20-experimental-research) for the completed work, remaining research phases and evidence requirements.
+
+<br/>
+
 > **Note on images in this README:** all diagrams and the logo are uploaded directly to repo `root` on the `main` branch (no `assets/` subfolder). If you're viewing this file somewhere that doesn't resolve relative paths (npm registry, some IDE previews), swap the relative paths below for the raw GitHub URL pattern:
 > `https://raw.githubusercontent.com/<your-org>/talos/main/<file>`
 
@@ -56,6 +60,7 @@
 - [External Target Validation](#external-target-validation)
 - [Known Simplifications](#known-simplifications)
 - [The Moat](#the-moat-why-this-compounds)
+- [Talos 2.0 Experimental Research](#talos-20-experimental-research)
 - [Roadmap](#roadmap)
 - [Why Now](#why-now)
 - [Business Model](#business-model)
@@ -113,6 +118,8 @@ Talos is a **security audit for the thing you actually shipped** — not a gener
 <br/>
 
 ## What Talos does
+
+> **Scope of the current scan path:** This section describes the original demo/legacy scanner. The PR-01–PR-03 research APIs are currently opt-in and do **not** automatically replace its scoring, graph discovery or reports. A v2 result will require a reviewed authorization policy and independent, complete evidence of the actual committed effect.
 
 Given a target agent endpoint and an adapter, Talos:
 
@@ -645,6 +652,8 @@ pytest tests/ -v
 
 Spins up real sample-agent subprocesses and validates: adapter parity, graph parity, full scan parity, adaptive generation behavior, dashboard HTML serving, dashboard scan streaming, monitoring lifecycle and run history, persistent alert generation, cross-engagement learning summary, and end-to-end findings behavior.
 
+**Talos 2.0 engineering tests:** the merged PR-03 GitHub Actions runs passed on Python 3.11 and 3.12, with **291 passing tests** (199 carried forward through PR-02 plus 92 new PR-03 controls). These cover portable profiles, conservative classification, action-oracle behavior, synthetic state transitions, reset isolation, benign tasks and failure/unknown outcomes. They are offline engineering controls, **not** 291 independent attacks or empirical model evaluations.
+
 <br/>
 
 ## External target validation
@@ -675,6 +684,10 @@ Honest about the current boundaries:
 - **Persistent monitoring is local-first** — SQLite for the dashboard; no external alert channels or multi-user coordination yet.
 - **Scoring uses known test-environment ground truth** — observable traces plus known order totals / allowed domains.
 - **The sample targets simulate side effects** — safe for validation, not real-world damage.
+- **Research-grade scoring is not yet the default scanner:** PR-01 provides a separate five-outcome offline oracle; PR-02 provides separate portable target profiles and evidence-bearing graphs; PR-03 provides controlled synthetic state evidence. The legacy scan path still uses fixture-specific success heuristics.
+- **Historical success and before/after numbers are demonstrations:** the original Talos-35 results and legacy 0–100 risk score are fixture-bound. They do not establish generalization, independent correctness or security on production agents.
+- **Existing risk regression gate needs replacement:** the committed baseline is 100 while the legacy risk score caps at 100, so the current increase-only check cannot detect a worse result. Meaningful positive/negative CI controls are planned before empirical runs.
+- **Independent evidence and LLM-backed research are pending:** the new domains are repository-authored controlled fixtures, not externally validated targets. Human adjudication, study approvals, frozen budgets, model runs and independent outcome checks remain open.
 
 <br/>
 
@@ -684,7 +697,65 @@ Talos is built around a compounding data asset: a **proprietary exploit-pattern 
 
 <br/>
 
+## Talos 2.0 experimental research
+
+**Status as of 15 November 2026:** research infrastructure is being developed in separate, reviewable PRs. This track is focused on **implementation, controlled experimentation, independent validation, reproducibility and statistical analysis**. It is **not a manuscript-writing phase**, and the new research functionality is separate from the legacy hackathon/demo pipeline.
+
+### Research question and evaluation standard
+
+**Primary question:** Under equal attack budgets, does graph-aware, feedback-guided red-teaming discover more **independently verified unauthorized committed tool effects** than graph-blind and nonadaptive controls on previously unseen agent tasks and domains?
+
+The main comparison is a **2 × 2 design**, evaluated using the same target set, scenario opportunities, policy/oracle definitions and budget rules:
+
+| Arm | Graph information | Feedback-guided adaptation |
+|---|---|---|
+| A1 — graph-blind/static control | No | No |
+| A2 — graph-aware/static | Yes | No |
+| A3 — graph-blind/adaptive | No | Yes |
+| A4 — full Talos | Yes | Yes |
+
+The future protocol must freeze DEV/TEST splits before held-out evaluation, count both target requests and attacker-model costs, prevent information leakage across arms, and report negative or mixed results. **No comparative efficacy result is claimed yet.**
+
+### Completed foundations
+
+| Phase | Implementation | What is established | Evidence boundary |
+|---|---|---|---|
+| [PR-00](https://github.com/sadiapeerzada/Talos/pull/14) — baseline custody | Audited historical claims, code paths, test artifacts, gaps and research decisions | A traceable research backlog and clear GO/NO-GO conditions | Audit only; missing historical traces are not reconstructed |
+| [PR-01](https://github.com/sadiapeerzada/Talos/pull/15) — versioned oracle | Five outcomes: `CONFIRMED`, `ATTEMPTED`, `BLOCKED`, `NO_VIOLATION`, `UNKNOWN`; explicit policies, evidence readers and exact repeat capture | A portable **offline** verdict contract that withholds confirmation when evidence is incomplete | No production trust authorization or independent human oracle validation |
+| [PR-02](https://github.com/sadiapeerzada/Talos/pull/16) — portable profiles and graphs | Versioned tool/permission/effect metadata; unknown-safe classification; distinct possible and observed graph relationships | Conservative analysis of renamed/unfamiliar tool schemas in synthetic controls | Declarations and graph candidates are not proven runtime paths |
+| [PR-03](https://github.com/sadiapeerzada/Talos/pull/17) — controlled targets | Synthetic IT-helpdesk and document-management domains; vulnerable/hardened variants; transactional state, audit readers and reset/benign-task controls | Actual local synthetic state effects can be inspected independently of agent/tool responses | Repository-authored fixtures, not independent external targets or LLM-backed studies |
+
+**Implementation pointers:** [oracle contract](docs/pr01_oracle.md) · [portable profiles](docs/pr02_portable_profiles.md) · [controlled targets](docs/experimental/pr03_targets.md) · [PR-03 GO/NO-GO](docs/experimental/pr03_go_no_go.md) · [original research gap audit](docs/research_gap_audit.md). The research modules live under `talos/talos/judging/`, `talos/talos/profiles/`, `talos/talos/graph/portable.py` and `talos/talos/targets/`.
+
+### Planned experimental phases (not yet completed)
+
+| Phase | Planned deliverable | Required evidence for completion |
+|---|---|---|
+| **PR-04** — versioned attack corpus | Portable attack cases, relevant threat-taxonomy mappings, provenance and split/leakage checks | Validated case schemas, documented synthetic provenance and offline regression tests; **no attack sweep** |
+| **PR-05** — reproducible execution | Frozen run manifests, immutable evidence, complete event accounting, reset/learning-state controls, budget tracking and separate v2 scanner-to-oracle integration | Deterministic replay and failure controls; meaningful positive/negative CI gate; explicit model opt-in, safe target allowlists and pinned dependencies |
+| **PR-06** — oracle validation | Blinded review workflow and external/independent evidence checks | Real human labels, disagreement/adjudication records and measured false-positive/false-negative/unknown behavior |
+| **PR-07** — matched-budget ablations | Graph-aware vs graph-blind × static vs adaptive experiment arms, with remediation and legitimate-task controls | Frozen comparable implementation and checks against feedback, budget and opportunity leakage |
+| **PR-08** — external comparator | A suitable, version-pinned baseline (e.g. Promptfoo or PyRIT where technically commensurate) | Same tasks, oracle, outcome definition and defensible resource accounting |
+| **PR-09** — main experiment campaign | Approved development pilot and then frozen, held-out LLM-backed controlled-agent experiments | Explicit endpoint/model/target authority, isolation, costs, raw traces and complete successes/failures/missing cells |
+| **PR-10** — analysis and robustness | Cluster-aware inference, discovery curves, uncertainty, cross-domain failures, cost/latency and security–utility tradeoffs | Reproducible calculations from recorded experimental data, including adverse and inconclusive results |
+
+### Non-negotiable measurement and safety boundaries
+
+- **Primary outcome:** independently adjudicated, policy-denied *committed effects discovered per prespecified attack budget*; a tool request or model response alone is not confirmed impact.
+- **Other measurements:** unique validated root causes, benign-task success, false positives/negatives, UNKNOWN/abstention rate, first-discovery cost, latency, tokens, robustness and sensitivity to missing outcomes.
+- **Unit of analysis:** repeated prompts and template variants are not assumed independent; case/target clustering and paired comparisons must be respected.
+- **Trust and custody:** profile declarations, source IDs, hashes and SQLite receipts do not by themselves confer independent authorship, authentication or authority. Trusted sources and policies require explicit operator review.
+- **Execution authorization:** no live inference, external scans or real financial/email/permission side effects without an approved isolated target allowlist, model/budget limits, reset/evidence contract and study protocol. No secrets, real PII or fabricated approvals.
+- **Preservation:** do not rewrite historical reports, reinterpret legacy metrics as v2 results, or change the original Talos-35 case IDs without versioning. New findings must retain full provenance.
+- **Publication:** no manuscript edits or claims of graph-aware superiority until the experimental and statistical work is complete and explicitly authorized.
+
+**Current GO/NO-GO:** GO for scoped PR-04 offline corpus engineering after normal review; **NO-GO for empirical campaigns and generalization claims** until the independent-custody, human-label, policy/trust and execution-authorization gates close.
+
+<br/>
+
 ## Roadmap
+
+> **Product/demo roadmap below:** these are legacy/demo features and future product ideas, separate from the Talos 2.0 experimental validation track above. Existing CI and risk-score outputs must not be treated as calibrated security assurance.
 
 **Already implemented:** live scan engine · dual adapters · structured reporting · interactive dashboard · adaptive refinement · recurring monitoring · persistent local alerts · cross-engagement learning · real Groq-backed target with hardened before/after mode · blast-radius scoring · auto-generated remediation patches · animated exploit replay · auto-fix & re-verify loop · CI risk-score regression gate · external-target harness integration (proven; live scan pending an operator's own API key) · cross-agent injection chaining (proven live; not yet wired into the automated scan engine).
 
