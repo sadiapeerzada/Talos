@@ -1,0 +1,12 @@
+# PR-06 pre-implementation decision ledger
+
+2026-11-18. PR-05 #20 verified merged at 60759c9fa03c2beda3a05023132412e48af36471, latest fetched remote main. Final experimental master plan v1.0 and original roadmap govern; PR-00–05 code/data/behavior remain unchanged.
+
+- No genuine reviewer, independently supplied label, approved sampling plan, trusted operational source or acceptance threshold has been supplied. Independent validation remains PENDING/NO-GO. No cohort or reviewer is automatically selected.
+- Reviewer labels explicitly record facts and a chosen reference category; no oracle output or fixture expectation creates reference truth. Software validates consistency but cannot authenticate human identity/independence or source truth.
+- Oracle predictions remain private and separate from reviewer views. Structured allowlist projection pseudonymizes scope/digests, excludes computed policy/reader/verdict and arm/expected-label metadata. Free-text leakage needs exact-view curator clearance; hashes do not establish blindness. No export is authorized without a supplied clearance reference.
+- Original sealed PR-05 evidence is preserved. Transformed reviewer views explicitly identify pseudonymization; no rewritten bytes are presented as original raw hashes. PR-05 does not archive the entire database/finalization journal: finality/source completeness can require separately custodied material or UNKNOWN.
+- Two distinct assigned pseudonyms must submit before adjudication. Disagreements in facts as well as categories require resolution. Adjudicator is distinct from both raters; original submissions are never overwritten. No automatic majority vote or human-judgment generation.
+- Mathematical calibration on synthetic unit-test labels is labeled engineering-only. Genuine reference comparisons require supplied human/independence/custody/protocol declarations; even then the software never certifies independent validation.
+- Action-level counts retain UNKNOWN/missing labels; case/target counts are separate, with no invented aggregation or independence. Cluster resampling preserves repeats within declared clusters; cluster validity, sampling and inferential use need researcher approval.
+- Policy definitions, independence checks, source authenticity, blinding clearance, sampling/clustering, adjudication rules, thresholds, retention/redaction and release remain human decisions. No PR-07 or empirical campaign is authorized.
