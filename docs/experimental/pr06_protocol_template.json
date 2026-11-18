@@ -1,0 +1,34 @@
+{
+  "template_status": "INCOMPLETE_NOT_APPROVED_NOT_A_REVIEW_ASSIGNMENT",
+  "protocol": {
+    "schema_version": "talos.validation-protocol.v1",
+    "protocol_id": null,
+    "version": null,
+    "purpose": "independent_human_review",
+    "sampling_reference": null,
+    "custody_reference": null,
+    "reviewed_policy_reference": null,
+    "independence_reference": null,
+    "clustering_reference": null,
+    "adjudication_reference": null,
+    "thresholds_reference": null,
+    "retention_reference": null,
+    "reviewers": [
+      {
+        "pseudonym": null,
+        "identity_reference": null,
+        "independence_reference": null
+      },
+      {
+        "pseudonym": null,
+        "identity_reference": null,
+        "independence_reference": null
+      }
+    ],
+    "adjudicator": {
+      "pseudonym": null,
+      "identity_reference": null,
+      "independence_reference": null
+    }
+  }
+}

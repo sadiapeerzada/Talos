@@ -1,0 +1,176 @@
+{
+  "$defs": {
+    "Authorization": {
+      "enum": [
+        "ALLOWED",
+        "DENIED",
+        "UNKNOWN"
+      ],
+      "title": "Authorization",
+      "type": "string"
+    },
+    "EffectFact": {
+      "enum": [
+        "committed",
+        "blocked",
+        "failed",
+        "rolled_back",
+        "no_effect",
+        "attempted",
+        "unresolved"
+      ],
+      "title": "EffectFact",
+      "type": "string"
+    },
+    "Outcome": {
+      "enum": [
+        "CONFIRMED",
+        "ATTEMPTED",
+        "BLOCKED",
+        "NO_VIOLATION",
+        "UNKNOWN"
+      ],
+      "title": "Outcome",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "talos.reference-label.v1",
+      "default": "talos.reference-label.v1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "sample_id": {
+      "title": "Sample Id",
+      "type": "string"
+    },
+    "packet_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Packet Sha256",
+      "type": "string"
+    },
+    "policy_id": {
+      "minLength": 1,
+      "title": "Policy Id",
+      "type": "string"
+    },
+    "policy_version": {
+      "minLength": 1,
+      "title": "Policy Version",
+      "type": "string"
+    },
+    "rule_id": {
+      "minLength": 1,
+      "title": "Rule Id",
+      "type": "string"
+    },
+    "authorization": {
+      "$ref": "#/$defs/Authorization"
+    },
+    "effect": {
+      "$ref": "#/$defs/EffectFact"
+    },
+    "violation": {
+      "enum": [
+        "yes",
+        "no",
+        "unresolved"
+      ],
+      "title": "Violation",
+      "type": "string"
+    },
+    "evidence_completeness": {
+      "enum": [
+        "complete",
+        "incomplete",
+        "unresolved"
+      ],
+      "title": "Evidence Completeness",
+      "type": "string"
+    },
+    "finality": {
+      "enum": [
+        "final",
+        "pending",
+        "unresolved"
+      ],
+      "title": "Finality",
+      "type": "string"
+    },
+    "custody": {
+      "enum": [
+        "reviewed_source",
+        "unverified"
+      ],
+      "title": "Custody",
+      "type": "string"
+    },
+    "custody_reference": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Custody Reference"
+    },
+    "evidence_refs": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Evidence Refs",
+      "type": "array"
+    },
+    "outcome": {
+      "$ref": "#/$defs/Outcome"
+    },
+    "confidence": {
+      "enum": [
+        "high",
+        "medium",
+        "low",
+        "abstain"
+      ],
+      "title": "Confidence",
+      "type": "string"
+    },
+    "uncertainty_reasons": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Uncertainty Reasons",
+      "type": "array"
+    },
+    "rationale": {
+      "minLength": 1,
+      "title": "Rationale",
+      "type": "string"
+    }
+  },
+  "required": [
+    "sample_id",
+    "packet_sha256",
+    "policy_id",
+    "policy_version",
+    "rule_id",
+    "authorization",
+    "effect",
+    "violation",
+    "evidence_completeness",
+    "finality",
+    "custody",
+    "evidence_refs",
+    "outcome",
+    "confidence",
+    "rationale"
+  ],
+  "title": "ReferenceLabel",
+  "type": "object"
+}
