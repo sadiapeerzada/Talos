@@ -1,0 +1,49 @@
+name: research-offline
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  reproducible-research:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.11', '3.12']
+    env:
+      ANTHROPIC_API_KEY: ''
+      OPENAI_API_KEY: ''
+      GROQ_API_KEY: ''
+      LANGCHAIN_API_KEY: ''
+      LANGSMITH_API_KEY: ''
+      LANGSMITH_TRACING: 'false'
+      HTTP_PROXY: ''
+      HTTPS_PROXY: ''
+      ALL_PROXY: ''
+      TALOS_RESEARCH_TEST_STATE_DIR: /tmp/talos-research-${{ github.run_id }}-${{ matrix.python-version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install hash-pinned research dependencies
+        run: python -m pip install --require-hashes -r talos/requirements-research.lock
+      - name: Install project without dependency resolution or isolated build
+        run: python -m pip install --no-deps --no-build-isolation -e ./talos
+      - name: Full offline suite and disabled-detector sentinel
+        env:
+          PYTHONPATH: ${{ github.workspace }}/talos/tests/offline_support:${{ github.workspace }}/talos
+        run: python -m pytest talos/tests/ -v --junitxml=research-tests.xml
+      - name: Record installed environment
+        if: always()
+        run: |
+          python -m pip freeze --all > research-environment.txt
+          python --version >> research-environment.txt
+          git rev-parse HEAD >> research-environment.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: research-validation-${{ matrix.python-version }}
+          path: |
+            research-tests.xml
+            research-environment.txt
