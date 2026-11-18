@@ -1,0 +1,106 @@
+{
+  "schema_version": "talos.crosswalk.v1",
+  "sources": [
+    {
+      "source_id": "owasp-llm-2026",
+      "publisher": "OWASP GenAI Security Project",
+      "url": "https://genai.owasp.org/download/56857/?tmstv=1785822482",
+      "retrieved_on": "2026-11-18",
+      "version_reference": "Version 2026, official download 56857, 122 pages",
+      "retrieval_note": "Verified PDF; publication/revision date placeholders remain in source. Agentic labels verified from this publisher crosswalk, not the unavailable standalone ASI PDF. Mutable download URL is not cryptographically pinned."
+    },
+    {
+      "source_id": "mitre-atlas-2026.10",
+      "publisher": "MITRE ATLAS",
+      "url": "https://raw.githubusercontent.com/mitre-atlas/atlas-data/f56c1468731d6428e5bf875263b4643b46d67437/dist/v6/ATLAS-2026.10.yaml",
+      "retrieved_on": "2026-11-18",
+      "version_reference": "Content 2026.10; format 6.1.0; commit f56c1468731d6428e5bf875263b4643b46d67437",
+      "retrieval_note": "Verified pinned canonical YAML entries; not deprecated v5.6.0 dist/ATLAS.yaml."
+    }
+  ],
+  "categories": [
+    {
+      "system": "OWASP-LLM",
+      "edition": "2026",
+      "category_id": "LLM01",
+      "title": "Prompt Injection",
+      "source_id": "owasp-llm-2026",
+      "locator": "printed p10",
+      "exact_families": [
+        "direct_prompt_injection",
+        "indirect_prompt_injection"
+      ]
+    },
+    {
+      "system": "OWASP-LLM",
+      "edition": "2026",
+      "category_id": "LLM03",
+      "title": "Excessive Agency",
+      "source_id": "owasp-llm-2026",
+      "locator": "printed p23",
+      "exact_families": []
+    },
+    {
+      "system": "OWASP-Agentic",
+      "edition": "2026",
+      "category_id": "ASI01",
+      "title": "Agent Goal Hijack",
+      "source_id": "owasp-llm-2026",
+      "locator": "Appendix A printed pp59–60",
+      "exact_families": []
+    },
+    {
+      "system": "OWASP-Agentic",
+      "edition": "2026",
+      "category_id": "ASI02",
+      "title": "Tool Misuse & Exploitation",
+      "source_id": "owasp-llm-2026",
+      "locator": "Appendix A printed pp59–60",
+      "exact_families": []
+    },
+    {
+      "system": "OWASP-Agentic",
+      "edition": "2026",
+      "category_id": "ASI03",
+      "title": "Identity & Privilege Abuse",
+      "source_id": "owasp-llm-2026",
+      "locator": "Appendix A printed pp59–60",
+      "exact_families": []
+    },
+    {
+      "system": "MITRE-ATLAS",
+      "edition": "2026.10",
+      "category_id": "AML.T0051.000",
+      "title": "Direct",
+      "source_id": "mitre-atlas-2026.10",
+      "locator": "YAML key AML.T0051.000, key locator only",
+      "exact_families": [
+        "direct_prompt_injection"
+      ]
+    },
+    {
+      "system": "MITRE-ATLAS",
+      "edition": "2026.10",
+      "category_id": "AML.T0051.001",
+      "title": "Indirect",
+      "source_id": "mitre-atlas-2026.10",
+      "locator": "YAML key AML.T0051.001, key locator only",
+      "exact_families": [
+        "indirect_prompt_injection"
+      ]
+    },
+    {
+      "system": "MITRE-ATLAS",
+      "edition": "2026.10",
+      "category_id": "AML.T0053",
+      "title": "AI Agent Tool Invocation",
+      "source_id": "mitre-atlas-2026.10",
+      "locator": "YAML key AML.T0053, key locator only",
+      "exact_families": []
+    }
+  ],
+  "coverage_exclusions": [
+    "No exhaustive taxonomy coverage; no memory poisoning, supply-chain, runtime-code or multi-agent protocol fixtures.",
+    "Mappings do not imply exploit validity, successful outcomes or independent review."
+  ]
+}
