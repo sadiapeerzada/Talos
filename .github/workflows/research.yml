@@ -20,7 +20,7 @@ jobs:
       HTTP_PROXY: ''
       HTTPS_PROXY: ''
       ALL_PROXY: ''
-      TALOS_RESEARCH_TEST_STATE_DIR: ${{ runner.temp }}/talos-research-${{ matrix.python-version }}
+      TALOS_RESEARCH_TEST_STATE_DIR: /tmp/talos-research-${{ github.run_id }}-${{ matrix.python-version }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

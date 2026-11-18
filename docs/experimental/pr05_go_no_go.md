@@ -34,7 +34,7 @@ env -u ANTHROPIC_API_KEY -u GROQ_API_KEY -u OPENAI_API_KEY -u LANGSMITH_API_KEY 
 
 Guard isolates legacy SQLite state and blocks non-loopback DNS/connect/connect_ex. Existing tests use loopback fixture servers. New calls are explicitly synthetic engineering tool controls, not prompt-delivery findings, external scans or empirical attack campaigns. Full transcript below includes all prior/new test IDs.
 
-Hosted Python 3.11/3.12 validation runs on the PR head through `research-offline`; exact status/run links are reported on the PR after push, with `research-tests.xml` and `research-environment.txt` artifacts. This file records local evidence, not an inferred hosted pass.
+Initial hosted research workflow was rejected before jobs because job-level environment used a runner-only context. The state path now uses available GitHub run/matrix identifiers; this configuration correction does not alter runtime code or local results. Hosted Python 3.11/3.12 validation runs on the PR head through `research-offline`; exact status/run links are reported on the PR after push, with `research-tests.xml` and `research-environment.txt` artifacts. This file records local evidence, not an inferred hosted pass.
 
 Lock SHA-256: `102b7c786068d61d197eca855b430c3e1706b24593fcf10dd46a78fa145deeaa`. Lock pins 56 resolved packages (including marker-specific dependencies and build tools); source `research-baseline-constraints.txt` records the existing environment rather than silently upgrading it. `git diff --check` passes.
 
