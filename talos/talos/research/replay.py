@@ -85,6 +85,8 @@ def replay(path:Path, *, expected_seal=None, allow_incomplete=False):
 def validate_packet(packet,ident,plan,cells,by_binding,intents):
     if ident not in cells or ident not in intents: raise IntegrityError('action without exact durable cell intent')
     cell=cells[ident];binding=by_binding[cell.binding_id];action=packet.observation.action
+    if cell.mode!='direct_fixture_control':
+        raise IntegrityError('tool-control evidence cannot represent corpus prompt delivery')
     if (action.target_id!=plan.profile.target_id or action.run_id!=plan.run_id
         or action.scenario_id!=cell.scenario_id or action.repeat_id!=cell.repeat_id
         or action.actor_id!=binding.proposed_actor_id):

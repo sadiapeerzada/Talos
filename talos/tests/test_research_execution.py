@@ -331,7 +331,7 @@ def repack(original,destination,transform):
 
 
 @pytest.mark.parametrize('damage',['config','learning','order','corpus','reset_context','raw_state','policy_gate',
-                                  'duplicate_result','denominator'])
+                                  'duplicate_result','denominator','delivery_mode'])
 def test_semantic_replay_rejects_even_rehashed_inconsistent_records(tmp_path,damage):
     path=tmp_path/'original'
     with ControlledEnvironment('it-helpdesk',variant='vulnerable') as env:
@@ -339,6 +339,9 @@ def test_semantic_replay_rejects_even_rehashed_inconsistent_records(tmp_path,dam
     def transform(kind,p):
         if kind=='manifest':
             if damage=='config': p['configuration_sha256']='0'*64
+            if damage=='delivery_mode':
+                p['plan']['cells'][0]['mode']='corpus_delivery'
+                p['configuration_sha256']=content_hash(p['plan'])
             if damage=='learning': p['learning_sha256']='0'*64
             if damage=='order': p['execution_order']=[]
             if damage=='corpus': p['corpus']['records'][0]['case']['objective']='tampered'
