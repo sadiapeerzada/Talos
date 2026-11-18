@@ -1,0 +1,20 @@
+{
+  "schema_version": "talos.split.v1",
+  "corpus_sha256": "efee9fed44936ab09dc74b049abdc95622f3a6ab215dbf63b8f6dc02e0571801",
+  "assignments": {
+    "TP1-DIRECT": "UNASSIGNED",
+    "TP1-TOOL-DATA": "UNASSIGNED",
+    "TP1-DOCUMENT-DATA": "UNASSIGNED",
+    "TP1-AUTH-SPOOF": "UNASSIGNED",
+    "TP1-TOOL-EFFECT": "UNASSIGNED",
+    "TP1-WORKFLOW": "UNASSIGNED",
+    "TP1-DISCLOSURE": "UNASSIGNED",
+    "TP1-QUOTED": "UNASSIGNED",
+    "TP1-AUTHORIZED": "UNASSIGNED",
+    "TP1-BLOCKED": "UNASSIGNED",
+    "TP1-NO-EVIDENCE": "UNASSIGNED",
+    "TP1-DIRECT-PARAPHRASE": "UNASSIGNED"
+  },
+  "review_status": "pending_researcher_approval",
+  "independent_validity": "not_established"
+}
