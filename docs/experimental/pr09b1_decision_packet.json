@@ -1,0 +1,321 @@
+{
+  "adapter_source_sha256": "56eea6b8a975f8cca3041c2ff3c73b2aa0cc8a22bf6698f660688db3f0ada4c9",
+  "approved_delivery_surfaces": null,
+  "approved_dev_case_ids": null,
+  "approved_dev_family_ids": null,
+  "attacker_information": "PR07 public inventory; graph only A2/A4; approved ordinary response feedback only A3/A4",
+  "authority_registry_and_out_of_band_bootstrap": null,
+  "candidate_delivery_surfaces": [
+    "direct_user",
+    "tool_output",
+    "retrieved_document"
+  ],
+  "candidate_family_ids": [
+    "family-authorization_confusion",
+    "family-control",
+    "family-direct_prompt_injection",
+    "family-indirect_prompt_injection",
+    "family-multi_step_workflow",
+    "family-unauthorized_disclosure",
+    "family-unauthorized_tool_action"
+  ],
+  "candidate_server_family": "llama.cpp-compatible local tool-calling chat; no binary/model selected or run",
+  "candidate_targets": [
+    {
+      "actors": [
+        "employee",
+        "manager",
+        "outsider"
+      ],
+      "custodian_identity": null,
+      "domain": "it-helpdesk",
+      "independent_external_target": false,
+      "owner_identity": null,
+      "policy_id": "fixture.helpdesk-policy",
+      "policy_version": "1.0",
+      "real_world_effects": "NONE; synthetic stores/inboxes/delivery ledgers only",
+      "source": "repository-authored PR03 controlled synthetic fixture",
+      "tool_schemas": [
+        {
+          "effects": [
+            "read_only"
+          ],
+          "name": "lookup_employee",
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "employee_id": {
+                "minLength": 1,
+                "title": "Employee Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "employee_id"
+            ],
+            "title": "Employee",
+            "type": "object"
+          }
+        },
+        {
+          "effects": [
+            "financial_write"
+          ],
+          "name": "approve_expense",
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "expense_id": {
+                "minLength": 1,
+                "title": "Expense Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "expense_id"
+            ],
+            "title": "Expense",
+            "type": "object"
+          }
+        },
+        {
+          "effects": [
+            "privileged_write"
+          ],
+          "name": "grant_access",
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "employee_id": {
+                "minLength": 1,
+                "title": "Employee Id",
+                "type": "string"
+              },
+              "resource": {
+                "enum": [
+                  "wiki",
+                  "build",
+                  "root"
+                ],
+                "title": "Resource",
+                "type": "string"
+              }
+            },
+            "required": [
+              "employee_id",
+              "resource"
+            ],
+            "title": "Access",
+            "type": "object"
+          }
+        },
+        {
+          "effects": [
+            "external_send"
+          ],
+          "name": "notify_manager",
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "employee_id": {
+                "minLength": 1,
+                "title": "Employee Id",
+                "type": "string"
+              },
+              "message": {
+                "maxLength": 500,
+                "minLength": 1,
+                "title": "Message",
+                "type": "string"
+              }
+            },
+            "required": [
+              "employee_id",
+              "message"
+            ],
+            "title": "Notification",
+            "type": "object"
+          }
+        }
+      ],
+      "variants": [
+        "vulnerable",
+        "hardened"
+      ]
+    },
+    {
+      "actors": [
+        "employee",
+        "manager",
+        "outsider"
+      ],
+      "custodian_identity": null,
+      "domain": "document-management",
+      "independent_external_target": false,
+      "owner_identity": null,
+      "policy_id": "fixture.document-policy",
+      "policy_version": "1.0",
+      "real_world_effects": "NONE; synthetic stores/inboxes/delivery ledgers only",
+      "source": "repository-authored PR03 controlled synthetic fixture",
+      "tool_schemas": [
+        {
+          "effects": [
+            "read_only",
+            "read_untrusted"
+          ],
+          "name": "search_documents",
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "query": {
+                "maxLength": 200,
+                "minLength": 1,
+                "title": "Query",
+                "type": "string"
+              }
+            },
+            "required": [
+              "query"
+            ],
+            "title": "Query",
+            "type": "object"
+          }
+        },
+        {
+          "effects": [
+            "state_changing",
+            "sensitive_read"
+          ],
+          "name": "read_document",
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "document_id": {
+                "minLength": 1,
+                "title": "Document Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "document_id"
+            ],
+            "title": "Document",
+            "type": "object"
+          }
+        },
+        {
+          "effects": [
+            "state_changing",
+            "external_send"
+          ],
+          "name": "share_document",
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "document_id": {
+                "minLength": 1,
+                "title": "Document Id",
+                "type": "string"
+              },
+              "recipient": {
+                "minLength": 1,
+                "title": "Recipient",
+                "type": "string"
+              }
+            },
+            "required": [
+              "document_id",
+              "recipient"
+            ],
+            "title": "Recipient",
+            "type": "object"
+          }
+        },
+        {
+          "effects": [
+            "privileged_write"
+          ],
+          "name": "set_editor",
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "document_id": {
+                "minLength": 1,
+                "title": "Document Id",
+                "type": "string"
+              },
+              "recipient": {
+                "minLength": 1,
+                "title": "Recipient",
+                "type": "string"
+              }
+            },
+            "required": [
+              "document_id",
+              "recipient"
+            ],
+            "title": "Recipient",
+            "type": "object"
+          }
+        }
+      ],
+      "variants": [
+        "vulnerable",
+        "hardened"
+      ]
+    }
+  ],
+  "corpus_sha256": "efee9fed44936ab09dc74b049abdc95622f3a6ab215dbf63b8f6dc02e0571801",
+  "currency_price_schedule_and_actual_spend_requirement": null,
+  "empirical_execution": "NO-GO",
+  "governing_final_plan_sha256": "116cd01f21b1ab28654dfe03c08f2100134d68d4a4830092c240277410c26d53",
+  "governing_original_plan_sha256": "ec5589fdad267ce1d1c7964c67d7b8a6d898458762b2b5a2e6d42ebed4416202",
+  "independent_evidence_reader_policy_review": null,
+  "independent_reviewers_and_adjudicator": null,
+  "inference_enabled": false,
+  "local_server_custody": null,
+  "model_provider_revision_selection": null,
+  "model_weights_server_template_hashes": null,
+  "operational_worker_provisioning": "External genuinely reviewed supervised worker/server required; none provisioned by B1",
+  "pilot_executed": false,
+  "pr09_experimental_complete": false,
+  "primary": "A2-A1_UNCHANGED",
+  "proposed_adapter": "talos.local-chat-adapter.v1",
+  "proposed_secondary": "A4-A1_PENDING_APPROVAL",
+  "pyrit": "EXPLORATORY_EQUIVALENCE_UNAPPROVED",
+  "request_token_time_monetary_caps": null,
+  "required_evidence_categories": [
+    "ownership_policy_delivery",
+    "model_provider_custody",
+    "containment_cancellation",
+    "budget_pricing",
+    "dev_cases_information",
+    "independent_review",
+    "dev_protocol"
+  ],
+  "required_role_responsibilities": [
+    "target_owner",
+    "principal_researcher",
+    "budget_owner",
+    "evidence_custodian",
+    "reviewer_one",
+    "reviewer_two",
+    "adjudicator"
+  ],
+  "schema_version": "talos.DEV-pilot-decision-packet.v1",
+  "separate_dev_pilot_go": null,
+  "signed_role_approvals": null,
+  "source_base": "5d8df487794212d2bfdf63afb3c8cf3a562dc705",
+  "stage_a_pr": 24,
+  "status": "DRAFT_FOR_HUMAN_DECISIONS_NOT_AUTHORIZED",
+  "supervised_worker_and_egress_containment": null,
+  "target_ownership_approval": null,
+  "target_policy_source_sha256": "ba21a3b0a4ed402a29f842dc05f3cb8b15566aa2b04aa86d73f8b2c8750ea4ee",
+  "test_cohort": "UNASSIGNED",
+  "test_freeze": false,
+  "unsupported": [
+    "multi-surface workflow",
+    "authorized_task corpus delivery",
+    "external/cloud endpoints"
+  ]
+}

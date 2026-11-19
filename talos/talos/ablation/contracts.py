@@ -143,13 +143,15 @@ def view_for(pool:CommonPool,arm:Arm,graph:PublicGraph):
 
 
 class PublicFeedback(Model):
-    schema_version: Literal['talos.ordinary-feedback.v1']='talos.ordinary-feedback.v1'
+    schema_version: Literal['talos.ordinary-feedback.v1','talos.ordinary-feedback.v2']='talos.ordinary-feedback.v1'
     response_text: str
     referenced_tools: tuple[str,...]=()
-    source: Literal['ordinary_test_double_response_not_ground_truth']='ordinary_test_double_response_not_ground_truth'
+    source: Literal['ordinary_test_double_response_not_ground_truth','ordinary_local_model_response_not_ground_truth']='ordinary_test_double_response_not_ground_truth'
 
     @model_validator(mode='after')
     def no_private_metadata(self):
+        if (self.schema_version=='talos.ordinary-feedback.v1')!=(self.source=='ordinary_test_double_response_not_ground_truth'):
+            raise ValueError('ordinary feedback version/source mismatch')
         import json
         try: value=json.loads(self.response_text)
         except ValueError: return self

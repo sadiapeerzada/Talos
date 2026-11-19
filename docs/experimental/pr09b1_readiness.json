@@ -1,0 +1,20 @@
+{
+  "approvals": "NOT_SUPPLIED",
+  "budget_approval": null,
+  "containment_review": null,
+  "empirical_execution": "NO-GO",
+  "engineering": "REVIEW_REQUIRED",
+  "independent_review": null,
+  "inference_enabled": false,
+  "model_selection": null,
+  "owned_server_custody": null,
+  "pilot_authorized": false,
+  "pilot_executed": false,
+  "pr09_experimental_complete": false,
+  "primary": "A2-A1",
+  "proposed_secondary": "A4-A1_PENDING_APPROVAL",
+  "schema_version": "talos.DEV-pilot-preparation.v1",
+  "stage": "PR09_B1",
+  "test_cohort": "UNASSIGNED",
+  "trust_root": "NOT_SUPPLIED"
+}

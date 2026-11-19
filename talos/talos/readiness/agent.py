@@ -14,14 +14,22 @@ from talos.targets import ControlledEnvironment
 from talos.targets.store import digest
 
 
-def control(plan:EngineeringPlan):
-    plan=EngineeringPlan.model_validate(plan.model_dump())
-    identity=plan.identity;budget=Budget(plan.limits)
+def control(plan:EngineeringPlan, *, backend=None):
+    if backend is None:plan=EngineeringPlan.model_validate(plan.model_dump())
+    else:
+        from talos.pilot.contracts import ModelPlan
+        from talos.pilot.backend import LocalModelBackend,ProtocolReplayBackend
+        if type(backend) not in (LocalModelBackend,ProtocolReplayBackend):raise TypeError('explicit versioned backend required')
+        plan=ModelPlan.model_validate(plan.model_dump());backend.assert_plan(plan)
+    identity=plan.identity;budget=Budget(plan.limits) if backend is None else backend.budget_for(plan.limits)
     result={'schema_version':'talos.controlled-agent-result.v1','plan_sha256':plan.digest(),
         'identity':identity.model_dump(mode='json'),'execution_basis':'offline_scripted_agent_control_not_empirical',
         'state':'INCOMPLETE','reason':'No terminal model reply.','reset':None,'profile':None,
         'public_trace':[],'private_packets':[],'delivery':None,'budget':None,
         'actual_provider_usage':None,'independent_primary_findings':None,'primary_eligible':False}
+    if backend is not None:
+        result['schema_version']='talos.controlled-model-agent-result.v1'
+        result['execution_basis']='local_model_DEV' if backend.is_live else 'software_protocol_fixture_not_empirical'
     if plan.injection.surface=='unsupported_workflow':
         result.update(state='UNSUPPORTED',reason='No independently verifiable workflow insertion contract.',budget=budget.snapshot());return result
     with ControlledEnvironment(identity.domain,variant=identity.variant) as environment:
@@ -47,11 +55,15 @@ def control(plan:EngineeringPlan):
         try:budget.reserve({'attempts':1});budget.settle({'attempts':1})
         except BudgetStop as error:
             result.update(state='BUDGET_STOP',reason=str(error),budget=budget.snapshot());return result
-        for step,reply in enumerate(plan.offline_replies):
-            try:budget.reserve({'target_model_calls':1})
+        for step in range(len(plan.offline_replies) if backend is None else plan.max_turns):
+            reply=plan.offline_replies[step] if backend is None else None
+            try:
+                if backend is None:budget.reserve({'target_model_calls':1})
+                else:backend.reserve(budget)
             except BudgetStop as error:result.update(state='BUDGET_STOP',reason=str(error));break
             public={'messages':json.loads(json.dumps(messages)),'tools':tools}
             result['public_trace'].append({'kind':'model_request','step':step,'request':public,'request_sha256':content_hash(public)})
+            if backend is not None:reply=backend.generate(public,step,budget)
             if delivery is not None and delivery['consumed_at_request'] is None:
                 delivery['consumed_at_request']=step;seen=True
             if reply.fault=='hang':
@@ -62,13 +74,13 @@ def control(plan:EngineeringPlan):
             if reply.fault=='process_probe':
                 import subprocess
                 subprocess.run(['/bin/true'],check=True)
-            budget.settle({'target_model_calls':1})
+            if backend is None:budget.settle({'target_model_calls':1})
             result['public_trace'].append({'kind':'model_reply','step':step,'reply':reply.model_dump(mode='json'),
-                'basis':'explicit_scripted_test_double'})
+                'basis':'explicit_scripted_test_double' if backend is None else ('local_provider_response' if backend.is_live else 'software_protocol_fixture')})
             messages.append({'role':'assistant','content':reply.text,'tool_calls':[c.model_dump(mode='json') for c in reply.tool_calls]})
             if not reply.tool_calls:
                 result.update(state='COMPLETED' if seen else 'DELIVERY_UNCONSUMED',
-                    reason='Offline agent workflow terminal; no empirical claim.' if seen else 'Requested injection was never consumed.');break
+                    reason=('Offline agent workflow terminal; no empirical claim.' if backend is None else 'Bounded model protocol workflow terminal; independent review still required.') if seen else 'Requested injection was never consumed.');break
             for call in reply.tool_calls:
                 if call.call_id in calls:raise ValueError('duplicate tool call')
                 calls.add(call.call_id)
@@ -76,6 +88,7 @@ def control(plan:EngineeringPlan):
                 except BudgetStop as error:result.update(state='BUDGET_STOP',reason=str(error));break
                 if call.tool_name not in {t['name'] for t in tools}:raise PermissionError('unknown/nonallowlisted tool')
                 action_id=f'{identity.run_id}:{identity.arm}:{identity.repeat_id}:{call.call_id}'
+                if backend is not None:backend.guard()
                 response=handle.execute(call.tool_name,call.arguments,action_id=action_id)
                 action=response.observation.action
                 evidence,issues=environment.reader().inspect(action);assessment=environment.policy.assess(action)
@@ -88,7 +101,7 @@ def control(plan:EngineeringPlan):
                 result['private_packets'].append(packet.model_dump(mode='json'))
                 budget.settle({'target_calls':1})
                 ordinary=json.loads(json.dumps(response.response));original=content_hash(ordinary)
-                anchor=call.call_id==plan.injection.anchor_call_id and call.tool_name==plan.injection.anchor_tool
+                anchor=(call.call_id==plan.injection.anchor_call_id and call.tool_name==plan.injection.anchor_tool) if backend is None else backend.matches_anchor(call)
                 if anchor and delivery is not None:raise ValueError('injection anchor reused')
                 source=None
                 if anchor and plan.injection.surface=='tool_output':
@@ -107,5 +120,9 @@ def control(plan:EngineeringPlan):
             if budget.stop_reason:break
         if result['state']=='INCOMPLETE' and delivery and not seen:
             result['state']='DELIVERY_UNCONSUMED';result['reason']='Insertion occurred but no subsequent agent request consumed it.'
+        if backend is not None:
+            result['protocol_receipts']=backend.receipts
+            result['actual_provider_usage']=backend.receipts if backend.is_live else None
+            if delivery:delivery['basis']='local_model_request_and_response_boundary' if backend.is_live else 'offline_wire_protocol_boundary'
         result['delivery']=delivery;result['budget']=budget.snapshot()
         return result
