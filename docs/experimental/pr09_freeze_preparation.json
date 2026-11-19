@@ -1,0 +1,18 @@
+{
+  "schema_version": "talos.study-freeze-preparation.v1",
+  "protocol_sha256": "9d59ac605b978f8cc1ef344011fa952ac3a5a7e15b2e21be4ed4c09480181084",
+  "governing_final_plan_sha256": "116cd01f21b1ab28654dfe03c08f2100134d68d4a4830092c240277410c26d53",
+  "governing_original_plan_sha256": "ec5589fdad267ce1d1c7964c67d7b8a6d898458762b2b5a2e6d42ebed4416202",
+  "base_commit": "700d6acf9c06e98c82cd623abf17c65c301ef24d",
+  "frozen": false,
+  "approval": null,
+  "test_cohort": null,
+  "primary_budget": null,
+  "sample_size": null,
+  "model_approvals": null,
+  "target_approvals": null,
+  "primary": "A2-A1",
+  "proposed_secondary": "A4-A1_PENDING_APPROVAL",
+  "empirical_execution": "NO-GO",
+  "pr09_experimental_complete": false
+}

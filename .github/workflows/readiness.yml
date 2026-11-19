@@ -1,0 +1,42 @@
+name: readiness-offline
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  stage-a-controls:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      matrix:
+        python-version: ['3.11', '3.12']
+    env:
+      LANGSMITH_TRACING: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install pinned research environment
+        run: |
+          python -m pip install --require-hashes -r talos/requirements-research.lock
+          python -m pip install --no-deps --no-build-isolation -e ./talos
+      - name: Record NO-GO readiness and proposed schemas
+        env:
+          PYTHONPATH: ${{ github.workspace }}/talos/tests/offline_support:${{ github.workspace }}/talos
+        run: |
+          python -m talos.readiness report > stage-a-readiness.json
+          python -m talos.readiness schema > stage-a-schemas.json
+      - name: Offline delivery, hard cancellation and approval controls
+        env:
+          PYTHONPATH: ${{ github.workspace }}/talos/tests/offline_support:${{ github.workspace }}/talos
+        run: python -m pytest talos/tests/test_readiness_delivery.py talos/tests/test_readiness_gates.py talos/tests/test_readiness_accounting.py -v --junitxml=stage-a-tests.xml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stage-a-readiness-${{ matrix.python-version }}
+          path: |
+            stage-a-readiness.json
+            stage-a-schemas.json
+            stage-a-tests.xml
