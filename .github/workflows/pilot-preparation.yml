@@ -1,0 +1,41 @@
+name: pilot-preparation-offline
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  b1-controls:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      matrix:
+        python-version: ['3.11', '3.12']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install pinned research and optional verifier dependencies
+        run: |
+          python -m pip install --require-hashes -r talos/requirements-research.lock -r talos/requirements-pilot.lock
+          python -m pip install --no-deps --no-build-isolation -e ./talos
+      - name: Public signature verification vector only, no signing
+        env:
+          PYTHONPATH: ${{ github.workspace }}/talos/tests/offline_support:${{ github.workspace }}/talos
+        run: python -m talos.pilot.crypto_smoke
+      - name: B1 offline protocol, delivery, accounting and denial controls
+        env:
+          PYTHONPATH: ${{ github.workspace }}/talos/tests/offline_support:${{ github.workspace }}/talos
+        run: |
+          python -m talos.pilot readiness > b1-readiness.json
+          python -m talos.pilot schema > b1-schemas.json
+          python -m pytest talos/tests/test_pilot_protocol.py talos/tests/test_pilot_authority.py talos/tests/test_pilot_delivery.py -v --junitxml=b1-tests.xml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: b1-offline-${{ matrix.python-version }}
+          path: |
+            b1-readiness.json
+            b1-schemas.json
+            b1-tests.xml

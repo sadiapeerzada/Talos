@@ -1,0 +1,11 @@
+# PR-09 Stage B1 pre-implementation audit and decisions
+
+2026-11-19. Stage A PR #24 is merged at `5d8df487794212d2bfdf63afb3c8cf3a562dc705`, current fetched main. Original user changes remain in their checkout. Final experimental plan v1.0 and original roadmap govern.
+
+Stage A has a fixed list of Reply objects, private action packets, delivery receipts and hard cancellation for offline workers. It lacks wire-format tool conversion, an actual HTTP model client, artifact-bound model identity, complete provider settlement, an authenticated authority verifier, local server ownership/cancellation and a bridge from PR-07 selection to delivery. Existing report correctly remains NO-GO. Its token/cost zeros are explicitly scripted control debits, not actual model usage.
+
+B1 prepares a loopback-only, nonstreaming OpenAI-style chat-completions adapter (candidate server family llama.cpp), strict wire conversion and token accounting, a reusable delivery hook, PR-07 strategy bridge, verifier for externally supplied Ed25519 authority records and owned-process cancellation. No model/server is installed, launched or contacted. No signing keys, approvals, identities or validated labels are generated. Crypto tests use published RFC verification vectors only, never approval signatures.
+
+No genuine trust-root/authority records, model weights/revision, server executable, owned server lease, independent custody/containment validation, approved case families/surfaces, caps/pricing or DEV pilot permission were supplied. Human packet fields remain unresolved. No concrete model is selected as approved. Loopback model protocol support is an engineering candidate, not permission or proof of identity from an alias. Hashes bind artifacts but do not prove an independently reviewed deployment.
+
+A new versioned path leaves Stage A defaults and all historical results intact. No gate passes from a merge, environment key, signature-looking string or test fixture. Missing records/crypto/usage/cancellation/budgets fail closed. Existing A2−A1 remains primary; A4−A1 and external equivalence remain pending. Stage B1 will not execute inference, select/freeze TEST or begin PR-10. The next genuine DEV pilot requires supplied decisions and independently checked deployment evidence, not another scripted success claim.
