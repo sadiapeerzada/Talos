@@ -1,0 +1,30 @@
+{
+  "schema_version": "talos.external-framework-pin.v1",
+  "framework": "PyRIT",
+  "package": "pyrit",
+  "version": "1.2.1",
+  "repository": "https://github.com/microsoft/PyRIT",
+  "commit": "c7b5789d74433da9e66569f27ee569f8622a22f6",
+  "tag": "v1.2.1",
+  "license": "MIT",
+  "license_sha256": "7c77a44a8acd9b41fdc209864a8016b3d430b5d0e09309818d5b7444336df744",
+  "native_class": "pyrit.executor.attack.multi_turn.red_teaming.RedTeamingAttack",
+  "source_files": {
+    "pyrit/executor/attack/multi_turn/red_teaming.py": "0d767ad45962e370686e94596d23a7c377731ac5d3aecececcb1b14cdca26bc7",
+    "pyrit/executor/attack/core/attack_config.py": "4e81257cb8a0d77dbed99fab3e631c0a1d553f58fe3ef75a9b5613d157cfbee4",
+    "pyrit/prompt_target/common/prompt_target.py": "7fee13a1811ebbce3c1fd075b4d364dbf6ad2210b42f67a48d07fa22881a06df",
+    "pyrit/score/true_false/substring_scorer.py": "5db7f499af548cf33d558835693fb6d5e8f642535f0a92783801ad9702f22e49",
+    "pyrit/common/random_context.py": "4395fe2af83d408e85e46d6521df553c7c99b923ed661983799174c0b23d1218",
+    "pyrit/memory/sqlite_memory.py": "30b2e7716077ce8f6835bf731c694f949911a700e114f7e11ba44b6b0ec47e8c",
+    "pyrit/datasets/executors/red_teaming/text_generation.yaml": "b8999c4828341909192a0f8f4de58fa7245066896eea7d76001452d175c64b90"
+  },
+  "retrieved_on": "2026-11-19",
+  "assessment": "engineering_selection_not_approved_study_comparator",
+  "promptfoo_assessment": {
+    "version": "0.119.13",
+    "tag": "promptfoo-v0.119.13",
+    "commit": "d1419964849e897b61e3871af8d009fc217be93e",
+    "repository": "https://github.com/promptfoo/promptfoo",
+    "license": "MIT"
+  }
+}

@@ -1,0 +1,44 @@
+name: comparator-offline
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  native-pyrit-control:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      matrix:
+        python-version: ['3.11', '3.12']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install Talos research environment
+        run: |
+          python -m pip install --require-hashes -r talos/requirements-research.lock
+          python -m pip install --no-deps --no-build-isolation -e ./talos
+      - name: Create isolated hash-pinned upstream environment
+        run: |
+          python -m venv "$RUNNER_TEMP/pyrit-env"
+          "$RUNNER_TEMP/pyrit-env/bin/python" -m pip install --require-hashes -r comparators/pyrit/build-requirements.lock
+          "$RUNNER_TEMP/pyrit-env/bin/python" -m pip install --require-hashes --no-build-isolation -r comparators/pyrit/requirements.lock
+          "$RUNNER_TEMP/pyrit-env/bin/python" -m pip freeze --all > external-environment.txt
+      - name: Authentic upstream loop with offline targets and network-denied worker
+        env:
+          PYTHONPATH: ${{ github.workspace }}/talos/tests/offline_support:${{ github.workspace }}/talos
+        run: python -m talos.comparator.smoke --python "$RUNNER_TEMP/pyrit-env/bin/python" > native-control.json
+      - name: Comparator regression contracts
+        env:
+          PYTHONPATH: ${{ github.workspace }}/talos/tests/offline_support:${{ github.workspace }}/talos
+        run: python -m pytest talos/tests/test_external_comparator.py -v --junitxml=comparator-tests.xml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: comparator-offline-${{ matrix.python-version }}
+          path: |
+            native-control.json
+            external-environment.txt
+            comparator-tests.xml

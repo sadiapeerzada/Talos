@@ -1,0 +1,2 @@
+# Isolated external comparator; never installed into Talos's runtime environment.
+pyrit==1.2.1

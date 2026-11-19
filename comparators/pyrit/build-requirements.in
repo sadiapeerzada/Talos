@@ -1,0 +1,3 @@
+# Pinned build backend for pure-Python dependencies without published wheels.
+setuptools==83.0.0
+wheel==0.46.3
