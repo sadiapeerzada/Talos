@@ -1,0 +1,12 @@
+# PR-08 pre-implementation engineering decisions
+
+2026-11-19. PR-07 #22 verified merged at cdcab80d2a8bbbe2b88ad9b7dda86397898f49c6, latest fetched main. Final experimental master plan v1.0, original roadmap and PR-00–07 govern this bounded comparator phase.
+
+- Assess pinned PyRIT 1.2.1 (c7b5789d74433da9e66569f27ee569f8622a22f6) and Promptfoo 0.119.13 (d1419964849e897b61e3871af8d009fc217be93e). PyRIT's native RedTeamingAttack is the selected engineering integration candidate; selection is not researcher approval of comparative validity.
+- Preserve the external native attack loop, prompt configuration and scorer behavior through the installed upstream package. Do not import Talos's selector or use its rendered stimuli as a substitute generator. Scripted attacker/objective targets are explicit offline test doubles, not real models or independent attack findings.
+- Isolate/pin all external dependencies in a separate environment. Main Talos dependencies remain unchanged. Runtime imports happen only in a restricted worker with no providers, plugins, environment credential loading, DNS/network, subprocess execution or live target support.
+- Common mapping contracts preserve every PR-07 public opportunity, target/profile, actor/policy, reset and surface, including unsupported cells. A separately supplied shared objective is prospective input, not automatically equivalent to Talos's existing rendered prompts. Indirect delivery and actual agent adapters remain unavailable.
+- Native scores/outcomes are diagnostics only. A native success, generated prompt or tool request never becomes CONFIRMED without the unchanged PR-01/05 policy/evidence contract; independent primary eligibility remains unestablished under PR-06 gates.
+- Record request-role breakdown (generation/refinement, objective requests, native grading, target-internal model/tool calls, retries), initialization/preparation time, tokens/cost and missing measurements. Native stubs have no provider usage. Known stub callback counts are not genuine model calls or target effects.
+- PR-07's existing primary A2−A1 remains unchanged. Proposed A4−A1 full-system comparison and any Talos-versus-PyRIT contrast require explicit researcher approval. No primary plan switch or inferential result is made.
+- Delivery, independent labels/source custody, target authorization, seed/stochastic comparability, budgets/currency/overhead, clustering/denominators and external comparator static/adaptive settings remain unresolved. All live execution and empirical claims are NO-GO. No PR-09 is authorized.
