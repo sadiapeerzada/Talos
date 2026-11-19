@@ -1,0 +1,11 @@
+# PR-09 Stage A pre-implementation decision ledger
+
+2026-11-19. PR-08 #23 confirmed merged; latest remote main `700d6acf9c06e98c82cd623abf17c65c301ef24d`. The finalized experimental master plan v1.0 and original roadmap govern. Original local files are preserved in their checkout; work uses a separate branch/worktree.
+
+No signed target ownership, independent policy/evidence review, model/provider authorization, approved monetary budget, independently selected TEST cohort, independent reviewers or frozen statistical protocol was supplied with this request. A merge, configuration field or approval reference cannot supply these decisions. **PR-09 EMPIRICAL EXECUTION: NO-GO.** This ledger predates implementation; no model calls/pilot/campaign will be run.
+
+Stage A can implement versioned readiness/approval/capability contracts, a controlled agent message/tool loop with offline replies, verifiable insertion/consumption receipts, process-level hard cancellation, evidence-aware private observation and sealed replay. Offline scripted replies exercise actual synthetic tools but remain engineering controls. No provider transport or operational approval authority is invented. Direct, tool-output and document insertion are distinct; workflow/other surfaces stay unsupported. Reviewed operational adapters and an approval verifier remain absent.
+
+Human decisions required: ownership and target isolation scope; approved domain policies and independent source custody; accepted delivery/reset/finality/cancellation semantics; provider/model revision/sampling/endpoint/usage/pricing; DEV budget and pilot authorization; validated corpus and independently selected TEST families; two independent raters/adjudicator and conflict declarations; root-cause/cluster/denominator/missingness/statistical protocol; permitted attacker information and comparator equivalence; retention/redaction; signed protocol freeze and amendments. No automatic reviewer assignment or held-out selection.
+
+A2−A1 remains primary. A4−A1 is a proposed secondary comparison pending approval. PyRIT is exploratory with unapproved opportunity equivalence. Stage A engineering completion does not complete PR-09's experimental phase. No PR-10 or publication work is authorized.
