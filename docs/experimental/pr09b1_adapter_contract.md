@@ -1,5 +1,7 @@
 # PR-09 B1 adapter, provenance and validation limits
 
+2026-11-20 refinement: [Qwen/MLX candidate](pr09b1_mlx_refinement.md) is now selected for proposed defender use. The HTTP path below is retained for compatibility; MLX uses a separate versioned spec, metadata pin, native parser and isolated request worker. Candidate selection is not deployment approval.
+
 `talos.pilot` prepares version `talos.local-chat-adapter.v1`. No inference command, model download/startup, default trust root, signing helper or credentials are supplied. The CLI prints readiness/schema only. Default LocalModelBackend cannot create an HTTP client without actual verified records and owned process/containment checks. ProtocolReplayBackend has no callable transport; it consumes fixed, explicitly labeled software JSON fixtures.
 
 ## Integration and source provenance

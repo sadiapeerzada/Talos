@@ -6,7 +6,7 @@ from talos.pilot import ModelPlan,Scope
 def readiness():
     return {'schema_version':'talos.DEV-pilot-preparation.v1','stage':'PR09_B1','inference_enabled':False,
         'pilot_authorized':False,'pilot_executed':False,'pr09_experimental_complete':False,'engineering':'REVIEW_REQUIRED',
-        'empirical_execution':'NO-GO','trust_root':'NOT_SUPPLIED','approvals':'NOT_SUPPLIED','model_selection':None,
+        'empirical_execution':'NO-GO','trust_root':'NOT_SUPPLIED','approvals':'NOT_SUPPLIED','model_selection':{'checkpoint':'mlx-community/Qwen3-4B-Instruct-2507-4bit','revision':'50d427756c6b1b2fe0c0a10f67fbda1fc8e82c1b','runtime':'MLX-LM','role':'defender_target_agent_not_attacker','status':'PROPOSED_NOT_APPROVED'},
         'budget_approval':None,'owned_server_custody':None,'containment_review':None,'independent_review':None,
         'test_cohort':'UNASSIGNED','primary':'A2-A1','proposed_secondary':'A4-A1_PENDING_APPROVAL'}
 

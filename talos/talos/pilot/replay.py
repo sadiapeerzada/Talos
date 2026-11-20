@@ -42,6 +42,16 @@ def replay(path:Path, *, expected_seal:str):
         if receipt['usage'] is None:
             if control:raise IntegrityError('complete control has missing usage')
             continue
+        from talos.pilot.mlx_spec import MLXModel
+        if isinstance(plan.model,MLXModel):
+            import hashlib
+            from talos.pilot.mlx_protocol import NativeCompletion,normalize
+            request_id='mlx-request-'+hashlib.sha256((plan.digest()+':'+str(step)+':'+json.dumps(receipt['request'],sort_keys=True)).encode()).hexdigest()
+            native=NativeCompletion.model_validate(receipt.get('native_MLX_completion'))
+            expected_wire=normalize(native,plan.model,request_id=request_id,tool_schemas={t.name:t.arguments for t in domain.tools},seen_ids=seen)
+            if (expected_wire!=receipt['response'] or receipt.get('candidate_manifest_sha256')!=plan.model.candidate_manifest_sha256
+                or receipt.get('call_ID_origin')!='adapter_correlation_ID_not_model_generated_identity' or receipt.get('paid_API_spending_inr')!=0):
+                raise IntegrityError('native MLX parsing/candidate/ID provenance differs')
         reply,usage=decode(receipt['response'],plan.model,tool_schemas={t.name:t.arguments for t in domain.tools},seen_ids=seen)
         seen.update(c.call_id for c in reply.tool_calls);decoded.append(reply)
         expected={'input_tokens':usage.prompt_tokens,'output_tokens':usage.completion_tokens,

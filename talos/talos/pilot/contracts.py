@@ -6,6 +6,7 @@ from talos.corpus.models import Model,content_hash
 from talos.readiness.contracts import Identity,Injection,ModelConfiguration
 from talos.research.contracts import Limits,Provenance
 from talos.targets.store import Fault,ResetFault
+from talos.pilot.mlx_spec import MLXModel
 H=r'^[0-9a-f]{64}$'
 
 
@@ -55,13 +56,13 @@ class ModelInjection(Model):
 
 class ModelPlan(Model):
     schema_version:Literal['talos.dev-model-conversation.v1']='talos.dev-model-conversation.v1'
-    adapter_version:Literal['talos.local-chat-adapter.v1']='talos.local-chat-adapter.v1'
+    adapter_version:Literal['talos.local-chat-adapter.v1','talos.qwen-mlx-native-adapter.v1']='talos.local-chat-adapter.v1'
     purpose:Literal['prospective_DEV_only_not_authorized']='prospective_DEV_only_not_authorized'
     identity:Identity
     provenance:Provenance
     legitimate_task:str=Field(min_length=1,max_length=4000)
     injection:ModelInjection
-    model:LocalModel
+    model:LocalModel|MLXModel
     limits:Limits
     case_identity:str|None=None
     opportunity_id:str|None=None
@@ -73,6 +74,13 @@ class ModelPlan(Model):
     primary_eligible:Literal[False]=False
     learning:Literal['disabled_fresh_per_process']='disabled_fresh_per_process'
     oracle_trust:Literal['operator_fixture_regression_only_not_independent_approval']='operator_fixture_regression_only_not_independent_approval'
+
+    @model_validator(mode='after')
+    def mlx_bounds(self):
+        if isinstance(self.model,MLXModel):
+            if self.max_turns>4:raise ValueError('proposed MLX request ceiling is four per episode')
+            if self.adapter_version!='talos.qwen-mlx-native-adapter.v1':raise ValueError('explicit native MLX adapter version required')
+        return self
 
     def digest(self):return content_hash(self)
 

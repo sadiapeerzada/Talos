@@ -4,12 +4,13 @@ import time
 from talos.readiness.agent import control
 from talos.pilot.contracts import ModelPlan
 from talos.pilot.backend import LocalModelBackend,ProtocolReplayBackend
+from talos.pilot.mlx_backend import MLXModelBackend,MLXReplayBackend
 from talos.research.recorder import Recorder
 
 
 def execute(plan:ModelPlan,backend,archive:Path):
     plan=ModelPlan.model_validate(plan.model_dump())
-    if type(backend) not in (LocalModelBackend,ProtocolReplayBackend):raise TypeError('explicit known backend required')
+    if type(backend) not in (LocalModelBackend,ProtocolReplayBackend,MLXModelBackend,MLXReplayBackend):raise TypeError('explicit known backend required')
     before=backend.budget_for(plan.limits).snapshot()
     with Recorder(archive,create=True) as recorder:
         recorder.append('model_manifest',{'plan':plan.model_dump(mode='json'),'plan_sha256':plan.digest(),
@@ -31,7 +32,7 @@ def execute(plan:ModelPlan,backend,archive:Path):
             if backend.budget is not None:backend.budget.used['elapsed_ms']=before['used']['elapsed_ms']+elapsed
         value={'control':result,'failure_class':error,'elapsed_ms':elapsed,'protocol_receipts':backend.receipts,
             'budget':result['budget'] if result else (backend.budget.snapshot() if backend.budget else None),
-            'cancellation':cancellation,'independent_primary_findings':None,'unified_outcome':'UNKNOWN',
+            'cancellation':cancellation,'MLX_batch':backend.batch.snapshot() if isinstance(backend,MLXReplayBackend) else None,'independent_primary_findings':None,'unified_outcome':'UNKNOWN',
             'actual_cost_microunits':None,'actual_provider_usage':backend.receipts if backend.is_live else None}
         recorder.append('model_result',value)
         recorder.append('model_summary',{'planned':1,'recorded':1,'unknown':1,'primary_findings':None,

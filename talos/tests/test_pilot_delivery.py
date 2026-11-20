@@ -143,13 +143,13 @@ def test_expired_conversation_cannot_dispatch_new_generation():
     assert b.receipts==[]
 
 
-def test_machine_packet_contains_no_chosen_model_budget_or_approvals():
+def test_machine_packet_contains_only_proposed_model_budget_and_no_approvals():
     import json
     from .pilot_helpers import ROOT
     from talos.pilot.__main__ import readiness
     packet=json.loads((ROOT/'docs/experimental/pr09b1_decision_packet.json').read_text())
-    assert packet['model_provider_revision_selection'] is None and packet['approved_dev_family_ids'] is None
-    assert packet['request_token_time_monetary_caps'] is None and packet['signed_role_approvals'] is None
+    assert packet['model_provider_revision_selection']['status']=='PROPOSED_NOT_APPROVED' and packet['approved_dev_family_ids'] is None
+    assert packet['request_token_time_monetary_caps']['status']=='PROPOSED_NOT_APPROVED' and packet['signed_role_approvals'] is None
     assert packet['pilot_executed'] is False and packet['test_freeze'] is False
     assert json.loads((ROOT/'docs/experimental/pr09b1_readiness.json').read_text())==readiness()
 
