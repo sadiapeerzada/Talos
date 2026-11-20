@@ -19,7 +19,8 @@ def control(plan:EngineeringPlan, *, backend=None):
     else:
         from talos.pilot.contracts import ModelPlan
         from talos.pilot.backend import LocalModelBackend,ProtocolReplayBackend
-        if type(backend) not in (LocalModelBackend,ProtocolReplayBackend):raise TypeError('explicit versioned backend required')
+        from talos.pilot.mlx_backend import MLXModelBackend,MLXReplayBackend
+        if type(backend) not in (LocalModelBackend,ProtocolReplayBackend,MLXModelBackend,MLXReplayBackend):raise TypeError('explicit versioned backend required')
         plan=ModelPlan.model_validate(plan.model_dump());backend.assert_plan(plan)
     identity=plan.identity;budget=Budget(plan.limits) if backend is None else backend.budget_for(plan.limits)
     result={'schema_version':'talos.controlled-agent-result.v1','plan_sha256':plan.digest(),

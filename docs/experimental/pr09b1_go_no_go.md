@@ -1,5 +1,7 @@
 # PR-09 Stage B1 engineering GO / operational DEV NO-GO
 
+**2026-11-20 continuation:** the user selected a Qwen/MLX defender candidate and proposed caps. [Refinement record](pr09b1_mlx_refinement.md) supersedes the initial unselected-model field below; all initial B1 results remain historical engineering results. Actual deployment, authority/custody approval and model inference remain absent. No new PR is authorized or opened.
+
 2026-11-19. Base: latest fetched remote main `5d8df487794212d2bfdf63afb3c8cf3a562dc705`, merged Stage A PR #24. Dedicated branch/worktree preserves original user files. Final experimental master plan v1.0, original roadmap and merged PR-00–Stage A govern.
 
 **Engineering GO for bounded component review. Operational DEV pilot: NO-GO. Inference disabled; no pilot executed; PR-09 experimental completion false.**

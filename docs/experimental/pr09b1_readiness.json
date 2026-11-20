@@ -6,7 +6,13 @@
   "engineering": "REVIEW_REQUIRED",
   "independent_review": null,
   "inference_enabled": false,
-  "model_selection": null,
+  "model_selection": {
+    "checkpoint": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
+    "revision": "50d427756c6b1b2fe0c0a10f67fbda1fc8e82c1b",
+    "role": "defender_target_agent_not_attacker",
+    "runtime": "MLX-LM",
+    "status": "PROPOSED_NOT_APPROVED"
+  },
   "owned_server_custody": null,
   "pilot_authorized": false,
   "pilot_executed": false,

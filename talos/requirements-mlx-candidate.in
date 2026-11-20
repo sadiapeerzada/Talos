@@ -1,0 +1,5 @@
+# Proposed isolated Apple Silicon runtime; resolve only in this task, never install/load/run.
+mlx-lm==0.26.2
+mlx==0.26.2
+transformers==4.53.3
+numpy==2.3.2

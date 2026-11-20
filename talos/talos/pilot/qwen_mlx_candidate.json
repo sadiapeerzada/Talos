@@ -1,0 +1,239 @@
+{
+  "MLX_runtime_installed_during_preparation": false,
+  "additional_direct_dependency_pins": {
+    "numpy": "2.3.2"
+  },
+  "approved_settings": null,
+  "candidate_status": "PROPOSED_NOT_APPROVED",
+  "checkpoint": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
+  "checkpoint_files": {
+    ".gitattributes": {
+      "bytes_downloaded": false,
+      "git_blob_sha1": "52373fe24473b1aa44333d318f578ae6bf04b49b",
+      "size_bytes": 1570
+    },
+    "README.md": {
+      "bytes_downloaded": true,
+      "digest_source": "small_pinned_metadata_bytes_verified_against_git_blob",
+      "git_blob_sha1": "371d88e9e3f85edb72629352f2c2addbe9c79ef4",
+      "sha256": "7b17ce562d7ea121c86d2ffdf660eed3726ac5b52cacfa9f1de11a65969f5657",
+      "size_bytes": 969
+    },
+    "added_tokens.json": {
+      "bytes_downloaded": false,
+      "git_blob_sha1": "b54f9135e44c1e81047e8d05cb027af8bc039eed",
+      "size_bytes": 707
+    },
+    "chat_template.jinja": {
+      "bytes_downloaded": true,
+      "digest_source": "small_pinned_metadata_bytes_verified_against_git_blob",
+      "git_blob_sha1": "a18870ad4ba26ac6c43758fc506c1bb6ff206bb4",
+      "sha256": "40c21f34cf67d8c760ef72f8ad3ae5afad514299d4b06e91dd9a8d705af7b541",
+      "size_bytes": 4040
+    },
+    "config.json": {
+      "bytes_downloaded": true,
+      "digest_source": "small_pinned_metadata_bytes_verified_against_git_blob",
+      "git_blob_sha1": "ce8b8eccd1cdf6d8a30767f58e8ff858dd15eab5",
+      "sha256": "574349e5a343236546fda55e4744a76e181f534182d7dc60ff1bad7e7a502849",
+      "size_bytes": 938
+    },
+    "generation_config.json": {
+      "bytes_downloaded": true,
+      "digest_source": "small_pinned_metadata_bytes_verified_against_git_blob",
+      "git_blob_sha1": "432531a002c181a19de338313d2375e9d7494d7e",
+      "sha256": "835fffe355c9438e7a25be099b3fccaa98350b83451f9fd2d99512e74f1ade48",
+      "size_bytes": 238
+    },
+    "merges.txt": {
+      "bytes_downloaded": false,
+      "git_blob_sha1": "31349551d90c7606f325fe0f11bbb8bd5fa0d7c7",
+      "size_bytes": 1671853
+    },
+    "model.safetensors": {
+      "bytes_downloaded": false,
+      "digest_source": "Hugging_Face_LFS_metadata_not_locally_verified",
+      "git_blob_sha1": "dd214eb9a62926b4a65539d04eac461017fe86ba",
+      "sha256": "2a73c6c248601ab904e035548abd8e6abb65ea27dcb5f342fb0a8910eb44173f",
+      "size_bytes": 2263022417
+    },
+    "model.safetensors.index.json": {
+      "bytes_downloaded": false,
+      "git_blob_sha1": "4741a210f9920c2949ca73bbb2a7ce9583e7fd83",
+      "size_bytes": 63964
+    },
+    "special_tokens_map.json": {
+      "bytes_downloaded": false,
+      "git_blob_sha1": "ac23c0aaa2434523c494330aeb79c58395378103",
+      "size_bytes": 613
+    },
+    "tokenizer.json": {
+      "bytes_downloaded": false,
+      "digest_source": "Hugging_Face_LFS_metadata_not_locally_verified",
+      "git_blob_sha1": "cd71f61a15a522601badb3dc960d800d9cb3766c",
+      "sha256": "aeb13307a71acd8fe81861d94ad54ab689df773318809eed3cbe794b4492dae4",
+      "size_bytes": 11422654
+    },
+    "tokenizer_config.json": {
+      "bytes_downloaded": true,
+      "digest_source": "small_pinned_metadata_bytes_verified_against_git_blob",
+      "git_blob_sha1": "474bbcd82077828bdec32b8dbc1826cdff2a792a",
+      "sha256": "4397cc477eb6d79715ccd2000accd6b3531928f30029665832fa1b255f24d2b9",
+      "size_bytes": 5440
+    },
+    "vocab.json": {
+      "bytes_downloaded": false,
+      "git_blob_sha1": "4783fe10ac3adce15ac8f358ef5462739852c569",
+      "size_bytes": 2776833
+    }
+  },
+  "checkpoint_license": "apache-2.0",
+  "checkpoint_revision": "50d427756c6b1b2fe0c0a10f67fbda1fc8e82c1b",
+  "inference_executed": false,
+  "metadata_api": "https://huggingface.co/api/models/mlx-community/Qwen3-4B-Instruct-2507-4bit?blobs=true",
+  "model_loaded": false,
+  "operational_status": "NO-GO",
+  "proposed_settings": {
+    "context_tokens": 4096,
+    "deterministic_generation_assumed": false,
+    "episodes": 8,
+    "hardware_energy_cost": null,
+    "maximum_input_tokens_with_full_output_reserve": 3584,
+    "maximum_output_tokens": 512,
+    "model_requests_per_episode": 4,
+    "paid_api_spending_inr": 0,
+    "temperature": 0,
+    "total_model_requests_max": 32,
+    "total_wall_ms": 1800000
+  },
+  "retrieved_on": "2026-11-20",
+  "role": "defender_target_agent_not_attacker",
+  "runtime_lock_platform": "macOS-arm64",
+  "runtime_lock_python": "CPython 3.13",
+  "runtime_lock_sha256": "fbb8b6d7f1e6bc880d23ff7fb5737c0a7c47939009e05c462d28fc3be7c9f029",
+  "runtime_package_artifacts": {
+    "mlx": [
+      {
+        "filename": "mlx-0.26.2-cp310-cp310-macosx_13_0_arm64.whl",
+        "sha256": "547297872a84c768b176885c7995666c77eceaeb58ae907cafc1999dba959a75"
+      },
+      {
+        "filename": "mlx-0.26.2-cp310-cp310-macosx_14_0_arm64.whl",
+        "sha256": "cc2b1faf65e97e1b4b62018b76888772ea2daac11d4b7c3ee31af7a2fb8c6c9a"
+      },
+      {
+        "filename": "mlx-0.26.2-cp310-cp310-macosx_15_0_arm64.whl",
+        "sha256": "d63d2023cb4958938ed75e976444f2a212039a2facf04a3020ced8544485b662"
+      },
+      {
+        "filename": "mlx-0.26.2-cp310-cp310-manylinux_2_31_x86_64.whl",
+        "sha256": "3c8328396ab2f40179d29d9e43ffb817cc603b34554ff0dad275a684771805b9"
+      },
+      {
+        "filename": "mlx-0.26.2-cp311-cp311-macosx_13_0_arm64.whl",
+        "sha256": "d9d2e886482dc86847ea25ef71bd103c5772dc69ea4c3516621626a009bf5b76"
+      },
+      {
+        "filename": "mlx-0.26.2-cp311-cp311-macosx_14_0_arm64.whl",
+        "sha256": "bc006c9db31fb8962f522fc45af2258fe093eb15f38b62937810fe2e11a06ead"
+      },
+      {
+        "filename": "mlx-0.26.2-cp311-cp311-macosx_15_0_arm64.whl",
+        "sha256": "c1dea89c317023b1e419c337bb9b7af32e4a29ecd881df14a2429eb001afd72c"
+      },
+      {
+        "filename": "mlx-0.26.2-cp311-cp311-manylinux_2_31_x86_64.whl",
+        "sha256": "eff665a63e5f748f801ba6e9a8874a0f4281aaf9fb729962422e76ea13cc75f3"
+      },
+      {
+        "filename": "mlx-0.26.2-cp312-cp312-macosx_13_0_arm64.whl",
+        "sha256": "ee14eebe6625f1344c13246a5b67ea40015706a7ff9affd9a4c943811ecb5b53"
+      },
+      {
+        "filename": "mlx-0.26.2-cp312-cp312-macosx_14_0_arm64.whl",
+        "sha256": "0decf09ea33dc58c3365af2f437f519ba0765da9b0199b5eaf6e09f90f2f1d6f"
+      },
+      {
+        "filename": "mlx-0.26.2-cp312-cp312-macosx_15_0_arm64.whl",
+        "sha256": "7e18fc05e85e4bd1519b55fb62b58a93760d927e12acc7b1bfe2cb531b284e04"
+      },
+      {
+        "filename": "mlx-0.26.2-cp312-cp312-manylinux_2_31_x86_64.whl",
+        "sha256": "6a69da8054ac53ddf82892856d2286f62531ced6a34bbd71b1ad0d1eb6548a65"
+      },
+      {
+        "filename": "mlx-0.26.2-cp313-cp313-macosx_13_0_arm64.whl",
+        "sha256": "ee59e1ebf1f3a6fb90bfff187b1a71dd11de29c0c79f7e3d04abdf3d2c2df88b"
+      },
+      {
+        "filename": "mlx-0.26.2-cp313-cp313-macosx_14_0_arm64.whl",
+        "sha256": "80be08dcdc4da45311fd01a05e1a40e2ad47e4128ffa79abc52ab0725ec0dbdf"
+      },
+      {
+        "filename": "mlx-0.26.2-cp313-cp313-macosx_15_0_arm64.whl",
+        "sha256": "36e34dd119d77a000a0d788268d20f9e926bdc0a706045fa30de8a26d8a9e059"
+      },
+      {
+        "filename": "mlx-0.26.2-cp313-cp313-manylinux_2_31_x86_64.whl",
+        "sha256": "fd79d00d4104cb9df55b1c18396c430aee7817b7290902dea16ec68a83e0f7db"
+      },
+      {
+        "filename": "mlx-0.26.2-cp39-cp39-macosx_13_0_arm64.whl",
+        "sha256": "cb1cad0f810550b5902596ad59501e60d8d3016b755dc45b7b1fbf09d956dc2b"
+      },
+      {
+        "filename": "mlx-0.26.2-cp39-cp39-macosx_14_0_arm64.whl",
+        "sha256": "f6471769f5f2b7006b729fd02cb61ad808833ccc61f50b501da795e3302f600d"
+      },
+      {
+        "filename": "mlx-0.26.2-cp39-cp39-macosx_15_0_arm64.whl",
+        "sha256": "cc407d8c039e9c2bc0adfdb9ecd4f6d8ae49a3c05797d60d51b9ae5ae05b5185"
+      },
+      {
+        "filename": "mlx-0.26.2-cp39-cp39-manylinux_2_31_x86_64.whl",
+        "sha256": "7b245bdc20291c9b31803afe05bde87bdce0665bac1d70d259cfa70e24d0e7d8"
+      }
+    ],
+    "mlx-lm": [
+      {
+        "filename": "mlx_lm-0.26.2-py3-none-any.whl",
+        "sha256": "632624c4753a290dfe68f368d21f24883105cd8bba4c6ba5cf0905fecd626c1e"
+      },
+      {
+        "filename": "mlx_lm-0.26.2.tar.gz",
+        "sha256": "77e6f875bdea90a71174357363622b90a071d9c279bc958021e17e38d69fbc2a"
+      }
+    ],
+    "transformers": [
+      {
+        "filename": "transformers-4.53.3-py3-none-any.whl",
+        "sha256": "5aba81c92095806b6baf12df35d756cf23b66c356975fb2a7fa9e536138d7c75"
+      },
+      {
+        "filename": "transformers-4.53.3.tar.gz",
+        "sha256": "b2eda1a261de79b78b97f7888fe2005fc0c3fabf5dad33d52cc02983f9f675d8"
+      }
+    ]
+  },
+  "runtime_selection_basis": "checkpoint card conversion mlx-lm 0.26.2; inspected qwen3/stream_generate/load sources and dependency metadata; execution compatibility UNVERIFIED",
+  "runtime_source_inspection": {
+    "git_blob_sha1": {
+      "mlx_lm/generate.py": "836838077ef8bdea6eedaa9bb7666077b7d12deb",
+      "mlx_lm/models/qwen3.py": "f9107158bea3caaf81017282d246ae8f6d38a924",
+      "mlx_lm/server.py": "f5f8294c0ded1abfc1406fd089a2d16f2928ce6c",
+      "mlx_lm/tokenizer_utils.py": "a782f8854a7d534e7bf8966b38df3b0f6cfc4dab",
+      "mlx_lm/utils.py": "8c42d50cb2d7f69a61f63c61b80b19823befcbba"
+    },
+    "ref": "v0.26.2",
+    "repository": "https://github.com/ml-explore/mlx-lm",
+    "server_interface_not_reused": "null tool-call IDs and persistent prompt cache; use isolated native stream_generate instead"
+  },
+  "runtime_versions": {
+    "mlx": "0.26.2",
+    "mlx-lm": "0.26.2",
+    "transformers": "4.53.3"
+  },
+  "schema_version": "talos.qwen-mlx-candidate-pin.v1",
+  "upstream_model": "Qwen/Qwen3-4B-Instruct-2507",
+  "weights_downloaded": false
+}

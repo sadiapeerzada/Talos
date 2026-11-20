@@ -1,8 +1,13 @@
 {
-  "adapter_source_sha256": "56eea6b8a975f8cca3041c2ff3c73b2aa0cc8a22bf6698f660688db3f0ada4c9",
+  "MLX_inference_executed": false,
+  "MLX_runtime_installed": false,
+  "MLX_weights_downloaded": false,
+  "adapter_source_sha256": "3b6ab20f18b719abbd0dc9adc604ef271ffd0e5921ec64207e87f97a7c0e4ab3",
   "approved_delivery_surfaces": null,
   "approved_dev_case_ids": null,
   "approved_dev_family_ids": null,
+  "approved_model_settings": null,
+  "approved_request_token_time_monetary_caps": null,
   "attacker_information": "PR07 public inventory; graph only A2/A4; approved ordinary response feedback only A3/A4",
   "authority_registry_and_out_of_band_bootstrap": null,
   "candidate_delivery_surfaces": [
@@ -19,7 +24,7 @@
     "family-unauthorized_disclosure",
     "family-unauthorized_tool_action"
   ],
-  "candidate_server_family": "llama.cpp-compatible local tool-calling chat; no binary/model selected or run",
+  "candidate_server_family": "NONE: isolated native MLX-LM request worker; legacy HTTP adapter retained only for compatibility",
   "candidate_targets": [
     {
       "actors": [
@@ -266,7 +271,13 @@
     }
   ],
   "corpus_sha256": "efee9fed44936ab09dc74b049abdc95622f3a6ab215dbf63b8f6dc02e0571801",
-  "currency_price_schedule_and_actual_spend_requirement": null,
+  "currency_price_schedule_and_actual_spend_requirement": {
+    "currency": "INR",
+    "hardware_energy_cost": null,
+    "paid_API_limit_is_not_zero_hardware_cost": true,
+    "paid_api_spending_cap": 0,
+    "status": "PROPOSED_NOT_APPROVED"
+  },
   "empirical_execution": "NO-GO",
   "governing_final_plan_sha256": "116cd01f21b1ab28654dfe03c08f2100134d68d4a4830092c240277410c26d53",
   "governing_original_plan_sha256": "ec5589fdad267ce1d1c7964c67d7b8a6d898458762b2b5a2e6d42ebed4416202",
@@ -274,16 +285,64 @@
   "independent_reviewers_and_adjudicator": null,
   "inference_enabled": false,
   "local_server_custody": null,
-  "model_provider_revision_selection": null,
-  "model_weights_server_template_hashes": null,
+  "model_provider_revision_selection": {
+    "candidate_manifest_sha256": "6954cc1c8b55d57d2b223acee027d0dd06e82aaa94317ae5a2a467be2b8d0180",
+    "chat_template_fingerprint": "40c21f34cf67d8c760ef72f8ad3ae5afad514299d4b06e91dd9a8d705af7b541",
+    "checkpoint": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
+    "checkpoint_revision": "50d427756c6b1b2fe0c0a10f67fbda1fc8e82c1b",
+    "model_configuration_fingerprint": "574349e5a343236546fda55e4744a76e181f534182d7dc60ff1bad7e7a502849",
+    "role": "defender_target_agent_not_attacker",
+    "runtime": "MLX-LM on Apple Silicon",
+    "runtime_versions": {
+      "mlx": "0.26.2",
+      "mlx-lm": "0.26.2",
+      "transformers": "4.53.3"
+    },
+    "status": "PROPOSED_NOT_APPROVED",
+    "upstream_model": "Qwen/Qwen3-4B-Instruct-2507",
+    "weight_sha256_from_repository_metadata": "2a73c6c248601ab904e035548abd8e6abb65ea27dcb5f342fb0a8910eb44173f"
+  },
+  "model_weights_server_template_hashes": {
+    "candidate_manifest_sha256": "6954cc1c8b55d57d2b223acee027d0dd06e82aaa94317ae5a2a467be2b8d0180",
+    "chat_template_sha256": "40c21f34cf67d8c760ef72f8ad3ae5afad514299d4b06e91dd9a8d705af7b541",
+    "config_sha256": "574349e5a343236546fda55e4744a76e181f534182d7dc60ff1bad7e7a502849",
+    "runtime_lock_sha256": "fbb8b6d7f1e6bc880d23ff7fb5737c0a7c47939009e05c462d28fc3be7c9f029",
+    "server": "NOT_APPLICABLE_NATIVE_MLX_WORKER",
+    "weight_bytes_locally_verified": false,
+    "weight_sha256_from_metadata": "2a73c6c248601ab904e035548abd8e6abb65ea27dcb5f342fb0a8910eb44173f"
+  },
   "operational_worker_provisioning": "External genuinely reviewed supervised worker/server required; none provisioned by B1",
   "pilot_executed": false,
   "pr09_experimental_complete": false,
   "primary": "A2-A1_UNCHANGED",
-  "proposed_adapter": "talos.local-chat-adapter.v1",
+  "proposed_adapter": "talos.qwen-mlx-native-adapter.v1",
+  "proposed_model_settings": {
+    "context_tokens": 4096,
+    "deterministic_generation_assumed": false,
+    "episodes": 8,
+    "hardware_energy_cost": null,
+    "maximum_input_tokens_with_full_output_reserve": 3584,
+    "maximum_output_tokens": 512,
+    "model_requests_per_episode": 4,
+    "paid_api_spending_inr": 0,
+    "temperature": 0,
+    "total_model_requests_max": 32,
+    "total_wall_ms": 1800000
+  },
   "proposed_secondary": "A4-A1_PENDING_APPROVAL",
   "pyrit": "EXPLORATORY_EQUIVALENCE_UNAPPROVED",
-  "request_token_time_monetary_caps": null,
+  "refinement_base_commit": "6310be9629a235c414eb55ee4103d65fc26991da",
+  "refinement_date": "2026-11-20",
+  "request_token_time_monetary_caps": {
+    "actual_hardware_cost": null,
+    "approval": null,
+    "episodes": 8,
+    "model_requests_per_episode": 4,
+    "paid_api_spending_inr": 0,
+    "status": "PROPOSED_NOT_APPROVED",
+    "total_requests": 32,
+    "total_wall_ms": 1800000
+  },
   "required_evidence_categories": [
     "ownership_policy_delivery",
     "model_provider_custody",
@@ -302,7 +361,8 @@
     "reviewer_two",
     "adjudicator"
   ],
-  "schema_version": "talos.DEV-pilot-decision-packet.v1",
+  "review_delivery": "Continue existing B1 branch; compare link only because PR25 is already merged; no new PR",
+  "schema_version": "talos.DEV-pilot-decision-packet.v2",
   "separate_dev_pilot_go": null,
   "signed_role_approvals": null,
   "source_base": "5d8df487794212d2bfdf63afb3c8cf3a562dc705",

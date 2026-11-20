@@ -15,8 +15,8 @@ from talos.targets.documents import DocumentDomain
 def source_hash():
     import hashlib
     root=Path(__file__).parents[1]
-    paths=sorted((root/'pilot').glob('*.py'))+[root/'readiness/agent.py',root/'ablation/contracts.py',root/'ablation/strategy.py']
-    return content_hash({str(p.relative_to(root)):hashlib.sha256(p.read_bytes()).hexdigest() for p in paths})
+    paths=sorted((root/'pilot').glob('*.py'))+[root/'readiness/agent.py',root/'ablation/contracts.py',root/'ablation/strategy.py',root/'pilot/qwen_mlx_candidate.json',root.parent/'requirements-mlx-candidate.lock']
+    return content_hash({str(p.relative_to(root.parent)):hashlib.sha256(p.read_bytes()).hexdigest() for p in paths})
 
 
 def target_source_hash():
@@ -66,6 +66,9 @@ class ProtocolReplayBackend:
         if step>=len(self.responses):raise ValueError('wire fixture exhausted')
         return self.responses[step]
 
+    def failure_usage(self,receipt):
+        return {'target_model_calls':1,'input_tokens':None,'output_tokens':None,'cost_microunits':None}
+
     def generate(self,public,step,budget):
         self.guard();started=time.monotonic_ns();model=self.plan.model
         request=encode(public,model)
@@ -88,7 +91,7 @@ class ProtocolReplayBackend:
             return reply
         except BaseException:
             if budget.pending is not None:
-                try:budget.settle({'target_model_calls':1,'input_tokens':None,'output_tokens':None,'cost_microunits':None})
+                try:budget.settle(self.failure_usage(receipt))
                 except BudgetStop:pass
             self.closed=True
             raise
