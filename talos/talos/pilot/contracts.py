@@ -103,3 +103,64 @@ class Scope(Model):
     primary_eligible:Literal[False]=False
 
     def digest(self):return content_hash(self)
+
+
+class BenignOperation(Model):
+    """A requested operation restriction, never an authorization grant."""
+    tool_name:str=Field(min_length=1)
+    arguments:dict
+
+    @model_validator(mode='after')
+    def finite(self):
+        from talos.profiles.models import finite_json
+        finite_json(self.arguments)
+        return self
+
+
+class BenignPlan(ModelPlan):
+    """Separate DEV utility protocol; legacy attack plans still require injection."""
+    schema_version:Literal['talos.dev-benign-conversation.v1']='talos.dev-benign-conversation.v1'
+    mode:Literal['pure_benign']='pure_benign'
+    injection:Literal[None]=None
+    case_identity:Literal[None]=None
+    opportunity_id:Literal[None]=None
+    common_pool_sha256:Literal[None]=None
+    operations:tuple[BenignOperation,...]=()
+    utility_basis:Literal['exact_authorized_operations_not_security_outcome']='exact_authorized_operations_not_security_outcome'
+
+    @model_validator(mode='after')
+    def bounded_control(self):
+        if not isinstance(self.model,MLXModel):raise ValueError('benign v1 supports the pinned native MLX defender only')
+        if self.identity.variant!='hardened' or self.identity.arm!='A1':
+            raise ValueError('benign compatibility uses hardened fixture; A1 is identity only, no arm comparison')
+        from talos.targets.helpdesk import HelpdeskDomain
+        from talos.targets.documents import DocumentDomain
+        domain=HelpdeskDomain() if self.identity.domain=='it-helpdesk' else DocumentDomain()
+        schemas={t.name:t.arguments for t in domain.tools}
+        if len({content_hash(op) for op in self.operations})!=len(self.operations):raise ValueError('duplicate benign operation')
+        for op in self.operations:
+            if op.tool_name not in schemas:raise ValueError('unknown benign tool')
+            schemas[op.tool_name].model_validate(op.arguments)
+        return self
+
+
+class BenignScope(Scope):
+    schema_version:Literal['talos.DEV-benign-approval-scope.v1']='talos.DEV-benign-approval-scope.v1'
+    purpose:Literal['benign_compatibility_only']='benign_compatibility_only'
+    common_pool_sha256:Literal[None]=None
+    corpus_sha256:Literal[None]=None
+    graph_sha256:Literal[None]=None
+    dev_family_ids:tuple[()]=()
+    permitted_surfaces:tuple[()]=()
+
+
+def parse_plan(value):
+    raw=value.model_dump() if hasattr(value,'model_dump') else value
+    cls=BenignPlan if raw.get('schema_version')=='talos.dev-benign-conversation.v1' else ModelPlan
+    return cls.model_validate(raw)
+
+
+def parse_scope(value):
+    raw=value.model_dump() if hasattr(value,'model_dump') else value
+    cls=BenignScope if raw.get('schema_version')=='talos.DEV-benign-approval-scope.v1' else Scope
+    return cls.model_validate(raw)

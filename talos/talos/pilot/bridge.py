@@ -56,6 +56,7 @@ class FourArmBridge:
 
     def deliver(self,arm,choice,plan,backend,archive):
         """Same selected content; only ordinary terminal text may update PR-07 state."""
+        if plan.injection is None:raise PermissionError('pure-benign utility controls are outside attack-arm delivery')
         from talos.pilot.runtime import execute
         from talos.research.recorder import read_payloads
         arm=Arm(arm)

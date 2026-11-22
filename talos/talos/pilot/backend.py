@@ -3,7 +3,7 @@ import json,time
 from pathlib import Path
 import httpx
 from talos.corpus.models import content_hash
-from talos.pilot.contracts import ModelPlan,Scope
+from talos.pilot.contracts import ModelPlan,Scope,parse_plan
 from talos.pilot.protocol import encode,decode,loads
 from talos.pilot.authority import ApprovalGate
 from talos.pilot.custody import OwnedServer
@@ -29,7 +29,7 @@ class ProtocolReplayBackend:
     """No socket, callable transport or authority. Fixed JSON records test protocol only."""
     is_live=False
     def __init__(self,plan:ModelPlan,responses:tuple[dict,...]):
-        self.plan=ModelPlan.model_validate(plan.model_dump());self.responses=json.loads(json.dumps(responses,allow_nan=False))
+        self.plan=parse_plan(plan);self.responses=json.loads(json.dumps(responses,allow_nan=False))
         self.receipts=[];self.seen=set();self.budget=None;self.started=None;self.closed=False;self.anchor_matches=0;self.shared_budget=None;self.elapsed_before=0
 
     def budget_for(self,limits):
@@ -39,7 +39,7 @@ class ProtocolReplayBackend:
         return self.shared_budget
 
     def assert_plan(self,plan):
-        if ModelPlan.model_validate(plan.model_dump())!=self.plan:raise PermissionError('backend/plan differs')
+        if parse_plan(plan)!=self.plan:raise PermissionError('backend/plan differs')
         if self.started is not None:raise PermissionError('conversation backend cannot be reused across runs/arms')
         self.elapsed_before=self.shared_budget.used['elapsed_ms'] if self.shared_budget else 0
         self.started=time.monotonic()
@@ -51,6 +51,7 @@ class ProtocolReplayBackend:
 
     def matches_anchor(self,call):
         injection=self.plan.injection
+        if injection is None:return False
         if call.tool_name!=injection.anchor_tool:return False
         if injection.surface=='retrieved_document' and call.arguments.get('document_id')!=injection.document_id:return False
         self.anchor_matches+=1
@@ -104,6 +105,7 @@ class LocalModelBackend(ProtocolReplayBackend):
     """No key, endpoint or enabled flag alone can open a connection."""
     is_live=True
     def __init__(self,plan:ModelPlan,scope:Scope, *, gate:ApprovalGate|None=None,owned_server:OwnedServer|None=None,opt_in=False):
+        if plan.injection is None:raise PermissionError('benign v1 requires the native MLX backend, not HTTP')
         super().__init__(plan,());self.scope=Scope.model_validate(scope.model_dump());self.gate=gate or ApprovalGate()
         self.owned_server=owned_server;self.opt_in=opt_in
 

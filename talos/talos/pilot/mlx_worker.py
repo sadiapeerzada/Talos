@@ -25,13 +25,13 @@ def prepare_prompt(tokenizer,request):
 
 def main():
     socket.socket.connect=deny;socket.socket.connect_ex=deny;socket.getaddrinfo=deny;sys.addaudithook(audit)
-    from talos.pilot.contracts import ModelPlan,Scope
+    from talos.pilot.contracts import parse_plan,parse_scope
     from talos.pilot.authority import ApprovalGate
     from talos.pilot.mlx_backend import verify_authority
     from talos.pilot.mlx_assets import verify_snapshot,verify_environment
     from talos.pilot.mlx_spec import CHECKPOINT,candidate
     from talos.pilot.mlx_protocol import collect
-    payload=json.loads(sys.stdin.read(1000000));plan=ModelPlan.model_validate(payload['plan']);scope=Scope.model_validate(payload['scope'])
+    payload=json.loads(sys.stdin.read(1000000));plan=parse_plan(payload['plan']);scope=parse_scope(payload['scope'])
     gate=ApprovalGate(registry_path=Path(payload['registry_path']),registry_sha256=payload['registry_sha256'],
         approval_paths=tuple(Path(p) for p in payload['approval_paths']),evidence_paths={k:Path(p) for k,p in payload['evidence_paths'].items()})
     if payload['owner_worker_pid']!=os.getppid():raise PermissionError('request is not owned by approved coordinator')

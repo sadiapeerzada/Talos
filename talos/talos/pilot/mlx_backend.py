@@ -3,7 +3,7 @@ import hashlib,json,os,sys,time
 from pathlib import Path
 from talos.pilot.backend import ProtocolReplayBackend,source_hash,target_source_hash
 from talos.pilot.authority import ApprovalGate,file_hash
-from talos.pilot.contracts import ModelPlan,Scope
+from talos.pilot.contracts import ModelPlan,Scope,BenignPlan,BenignScope,parse_scope
 from talos.pilot.mlx_spec import MLXModel,candidate_hash,ProposedMLXPilot
 from talos.pilot.mlx_limits import MLXBatchLedger
 from talos.pilot.mlx_protocol import NativeCompletion,normalize
@@ -19,12 +19,15 @@ def verify_authority(plan,scope,gate,opt_in,python_path, *, owner_pid=None,batch
     proof=gate.require(scope,opt_in=opt_in)
     if scope.plan_sha256!=plan.digest() or scope.adapter_source_sha256!=source_hash() or scope.target_policy_source_sha256!=target_source_hash():
         raise PermissionError('MLX plan/source scope differs')
-    if plan.provenance.target_model_id!=plan.model.configuration.model_id or plan.injection.surface not in scope.permitted_surfaces:
+    benign=isinstance(plan,BenignPlan)
+    if benign!=isinstance(scope,BenignScope):raise PermissionError('benign/attack scope cannot be interchanged')
+    if plan.provenance.target_model_id!=plan.model.configuration.model_id or (not benign and plan.injection.surface not in scope.permitted_surfaces):
         raise PermissionError('explicit defender model provenance/delivery approval missing')
     from talos.corpus import load_corpus,content_hash
-    corpus=load_corpus();record=next((r for r in corpus.records if r.identity==plan.case_identity),None)
-    if (record is None or record.case.family_id not in scope.dev_family_ids or content_hash(corpus)!=scope.corpus_sha256
-        or plan.common_pool_sha256!=scope.common_pool_sha256 or not plan.opportunity_id):raise PermissionError('approved DEV corpus/family/opportunity missing')
+    if not benign:
+        corpus=load_corpus();record=next((r for r in corpus.records if r.identity==plan.case_identity),None)
+        if (record is None or record.case.family_id not in scope.dev_family_ids or content_hash(corpus)!=scope.corpus_sha256
+            or plan.common_pool_sha256!=scope.common_pool_sha256 or not plan.opportunity_id):raise PermissionError('approved DEV corpus/family/opportunity missing')
     custody=loads(Path(gate.evidence_paths['model_provider_custody']).read_text())
     worker=Path(__file__).with_name('mlx_worker.py').resolve()
     expected={'runtime':'mlx-lm','role':'defender_target_agent_not_attacker','plan_sha256':plan.digest(),
@@ -46,13 +49,30 @@ def verify_authority(plan,scope,gate,opt_in,python_path, *, owner_pid=None,batch
         'decision':'APPROVE_DEV_LIMITS','shared_preparation_policy':'PR07_measure_once_equal_debit'}:
         raise PermissionError('proposed settings are not signed DEV batch/budget approval')
     dev=loads(Path(gate.evidence_paths['dev_cases_information']).read_text())
-    if dev!={'plan_sha256':plan.digest(),'case_identity':plan.case_identity,'opportunity_id':plan.opportunity_id,
-        'common_pool_sha256':plan.common_pool_sha256,'partition':'DEV','attacker_information':'PR07_ordinary_public_feedback_only'}:
+    expected_dev=({'plan_sha256':plan.digest(),'mode':'pure_benign','domain':plan.identity.domain,'actor_id':plan.identity.actor_id,
+        'variant':plan.identity.variant,'operations':[op.model_dump(mode='json') for op in plan.operations],
+        'partition':'DEV','information':'public_task_and_tool_schemas_only'} if benign else
+        {'plan_sha256':plan.digest(),'case_identity':plan.case_identity,'opportunity_id':plan.opportunity_id,
+         'common_pool_sha256':plan.common_pool_sha256,'partition':'DEV','attacker_information':'PR07_ordinary_public_feedback_only'})
+    if dev!=expected_dev:
         raise PermissionError('DEV/information approval differs')
     containment=loads(Path(gate.evidence_paths['containment_cancellation']).read_text());pid=owner_pid or os.getpid()
     if (containment.get('adapter_source_sha256')!=source_hash() or containment.get('worker_pid')!=pid or os.getpgid(pid)!=pid
         or containment.get('owned_worker_hard_kill_reviewed') is not True or containment.get('egress_containment_reviewed') is not True
         or containment.get('MLX_request_subprocess_reviewed') is not True):raise PermissionError('genuine supervised MLX containment missing')
+    supervisor=containment.get('supervisor_pid')
+    if type(supervisor) is not int or supervisor<=0 or (owner_pid is None and supervisor!=os.getppid()):
+        raise PermissionError('actual supervised coordinator binding absent')
+    # The coordinator checks its real parent. The request child rechecks the
+    # signed coordinator/supervisor record without mistaking its own parent
+    # (the coordinator) for the external supervisor.
+    # Hashes bind content, not kernel enforcement or independent review validity.
+    reports=containment.get('os_control_reports',{})
+    if set(reports)!={'network_denial','filesystem_isolation','process_tree_finality'}:
+        raise PermissionError('independently reviewed OS control reports unavailable')
+    for entry in reports.values():
+        if set(entry)!={'path','sha256'} or file_hash(Path(entry['path']))!=entry['sha256']:
+            raise PermissionError('OS control report changed/unavailable')
     return proof
 
 
@@ -113,7 +133,7 @@ class MLXReplayBackend(ProtocolReplayBackend):
 class MLXModelBackend(MLXReplayBackend):
     is_live=True
     def __init__(self,plan,scope, *, batch,gate=None,python_path=None,opt_in=False):
-        super().__init__(plan,(),batch=batch);self.scope=Scope.model_validate(scope.model_dump())
+        super().__init__(plan,(),batch=batch);self.scope=parse_scope(scope)
         self.gate=gate or ApprovalGate();self.python_path=Path(python_path) if python_path else None;self.opt_in=opt_in;self.active=None
 
     def assert_plan(self,plan):
@@ -143,4 +163,6 @@ class MLXModelBackend(MLXReplayBackend):
     def close(self):
         self.closed=True
         if self.active is not None and self.active.process is not None and self.active.process.poll() is None:self.active.cancel()
-        return {'MLX_request_reaped':self.active is None or self.active.process is None or self.active.process.poll() is not None,'hardware_cost':None}
+        return {'MLX_request_reaped':self.active is None or self.active.process is None or self.active.process.poll() is not None,'hardware_cost':None,
+            'private_worker_diagnostics':self.active.diagnostics if self.active else None,
+            'OS_containment_verified_by_this_code':False}
