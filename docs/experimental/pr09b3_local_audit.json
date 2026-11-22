@@ -1,0 +1,374 @@
+{
+  "B2_original_artifacts_byte_identical": true,
+  "B2_original_artifacts_checked": 46,
+  "B2_original_report_hashes": {
+    "DEV_AUTHORIZATION_REQUEST.md": "e74c884b381779f3ae8370384125babafede3dac89a39cb128cf84acf8158704",
+    "LOCAL_READINESS.md": "5b88c380df272be7232e21aa893150f54a7d44e5036b029b0236fe1a1da1d4aa"
+  },
+  "assets": {
+    "all_13_match_committed_manifest": true,
+    "files": {
+      ".gitattributes": {
+        "bytes": 1570,
+        "git_blob_sha1": "52373fe24473b1aa44333d318f578ae6bf04b49b",
+        "sha256": "34448b82c17d60fec9b65b1f093c115ddbaadc04beb1b0140b6bfed2e012a930"
+      },
+      "README.md": {
+        "bytes": 969,
+        "git_blob_sha1": "371d88e9e3f85edb72629352f2c2addbe9c79ef4",
+        "sha256": "7b17ce562d7ea121c86d2ffdf660eed3726ac5b52cacfa9f1de11a65969f5657"
+      },
+      "added_tokens.json": {
+        "bytes": 707,
+        "git_blob_sha1": "b54f9135e44c1e81047e8d05cb027af8bc039eed",
+        "sha256": "c0284b582e14987fbd3d5a2cb2bd139084371ed9acbae488829a1c900833c680"
+      },
+      "chat_template.jinja": {
+        "bytes": 4040,
+        "git_blob_sha1": "a18870ad4ba26ac6c43758fc506c1bb6ff206bb4",
+        "sha256": "40c21f34cf67d8c760ef72f8ad3ae5afad514299d4b06e91dd9a8d705af7b541"
+      },
+      "config.json": {
+        "bytes": 938,
+        "git_blob_sha1": "ce8b8eccd1cdf6d8a30767f58e8ff858dd15eab5",
+        "sha256": "574349e5a343236546fda55e4744a76e181f534182d7dc60ff1bad7e7a502849"
+      },
+      "generation_config.json": {
+        "bytes": 238,
+        "git_blob_sha1": "432531a002c181a19de338313d2375e9d7494d7e",
+        "sha256": "835fffe355c9438e7a25be099b3fccaa98350b83451f9fd2d99512e74f1ade48"
+      },
+      "merges.txt": {
+        "bytes": 1671853,
+        "git_blob_sha1": "31349551d90c7606f325fe0f11bbb8bd5fa0d7c7",
+        "sha256": "8831e4f1a044471340f7c0a83d7bd71306a5b867e95fd870f74d0c5308a904d5"
+      },
+      "model.safetensors": {
+        "bytes": 2263022417,
+        "git_blob_sha1": "2114c11dc987c16797f8998233b634b331b222ac",
+        "sha256": "2a73c6c248601ab904e035548abd8e6abb65ea27dcb5f342fb0a8910eb44173f"
+      },
+      "model.safetensors.index.json": {
+        "bytes": 63964,
+        "git_blob_sha1": "4741a210f9920c2949ca73bbb2a7ce9583e7fd83",
+        "sha256": "388d811b8b7c2608dd04cce1bcb04a8bf715d19b42790894e6d3427ff429a777"
+      },
+      "special_tokens_map.json": {
+        "bytes": 613,
+        "git_blob_sha1": "ac23c0aaa2434523c494330aeb79c58395378103",
+        "sha256": "76862e765266b85aa9459767e33cbaf13970f327a0e88d1c65846c2ddd3a1ecd"
+      },
+      "tokenizer.json": {
+        "bytes": 11422654,
+        "git_blob_sha1": "949e1ec83f61520a25c75426edc4a43acc36f29a",
+        "sha256": "aeb13307a71acd8fe81861d94ad54ab689df773318809eed3cbe794b4492dae4"
+      },
+      "tokenizer_config.json": {
+        "bytes": 5440,
+        "git_blob_sha1": "474bbcd82077828bdec32b8dbc1826cdff2a792a",
+        "sha256": "4397cc477eb6d79715ccd2000accd6b3531928f30029665832fa1b255f24d2b9"
+      },
+      "vocab.json": {
+        "bytes": 2776833,
+        "git_blob_sha1": "4783fe10ac3adce15ac8f358ef5462739852c569",
+        "sha256": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910"
+      }
+    },
+    "inference_executed": false,
+    "model_loaded": false,
+    "total_bytes": 2278972236
+  },
+  "basis": "local_operator_rerun_NOT_independent_custody_or_model_validation",
+  "client_date": "2026-11-21",
+  "hardware": {
+    "GPU": {
+      "spdisplays_mtlgpufamilysupport": "spdisplays_metal4",
+      "spdisplays_vendor": "sppci_vendor_Apple",
+      "sppci_model": "Apple M4"
+    },
+    "RAM_bytes": 17179869184,
+    "client_date": "2026-11-21",
+    "hardware": {
+      "chip_type": "Apple M4",
+      "machine_model": "Mac16,12",
+      "machine_name": "MacBook Air",
+      "number_processors": "proc 10:4:6:0",
+      "physical_memory": "16 GB"
+    },
+    "logical_cpu_cores": 10,
+    "macOS_build": "25F84",
+    "macOS_version": "26.5.2",
+    "physical_cpu_cores": 10,
+    "platform": "Darwin arm64"
+  },
+  "inconsistencies": [
+    "No provisioning hash/version/static compatibility mismatch found.",
+    "B2 helper overwrote its own JSON as a side effect; restored original byte-for-byte using embedded original record and independently checked recorded SHA-256. New recheck preserved separately."
+  ],
+  "inference_executed": false,
+  "model_loaded": false,
+  "operational_DEV": "NO-GO",
+  "runtime": {
+    "all_applicable_locked_versions_match": true,
+    "inference_executed": false,
+    "installed_distributions": 73,
+    "model_loaded": false,
+    "platform": "macOS-26.5.2-arm64-arm-64bit-Mach-O",
+    "python": "3.13.7",
+    "versions": {
+      "annotated-doc": "0.0.4",
+      "annotated-types": "0.7.0",
+      "anthropic": "0.117.0",
+      "anyio": "4.14.2",
+      "certifi": "2026.6.17",
+      "cffi": "2.1.1",
+      "charset-normalizer": "3.4.9",
+      "click": "8.4.2",
+      "cryptography": "50.0.2",
+      "distro": "1.9.0",
+      "docstring-parser": "0.18.0",
+      "fastapi": "0.139.2",
+      "filelock": "4.2.12",
+      "fsspec": "2026.9.0",
+      "h11": "0.16.0",
+      "hf-xet": "1.8.0",
+      "httpcore": "1.0.9",
+      "httptools": "0.8.0",
+      "httpx": "0.28.1",
+      "huggingface-hub": "0.36.2",
+      "idna": "3.18",
+      "iniconfig": "2.3.0",
+      "jinja2": "3.1.6",
+      "jiter": "0.16.0",
+      "jsonpatch": "1.33",
+      "jsonpointer": "3.1.1",
+      "langchain": "1.3.14",
+      "langchain-core": "1.4.9",
+      "langchain-protocol": "0.0.18",
+      "langgraph": "1.2.9",
+      "langgraph-checkpoint": "4.1.1",
+      "langgraph-prebuilt": "1.1.0",
+      "langgraph-sdk": "0.4.2",
+      "langsmith": "0.10.7",
+      "markupsafe": "3.0.4",
+      "mlx": "0.26.2",
+      "mlx-lm": "0.26.2",
+      "networkx": "3.6.1",
+      "numpy": "2.3.2",
+      "orjson": "3.11.9",
+      "ormsgpack": "1.12.2",
+      "packaging": "26.2",
+      "pluggy": "1.6.0",
+      "protobuf": "7.36.2",
+      "pycparser": "3.12",
+      "pydantic": "2.13.4",
+      "pydantic-core": "2.46.4",
+      "pygments": "2.20.0",
+      "pytest": "9.1.1",
+      "python-dotenv": "1.2.2",
+      "pyyaml": "6.0.3",
+      "regex": "2026.11.19",
+      "requests": "2.34.2",
+      "requests-toolbelt": "1.0.0",
+      "safetensors": "0.8.0",
+      "setuptools": "83.0.0",
+      "sniffio": "1.3.1",
+      "starlette": "1.3.1",
+      "tenacity": "9.1.4",
+      "tokenizers": "0.21.4",
+      "tqdm": "4.70.1",
+      "transformers": "4.53.3",
+      "typing-extensions": "4.16.0",
+      "typing-inspection": "0.4.2",
+      "urllib3": "2.7.0",
+      "uuid-utils": "0.17.0",
+      "uvicorn": "0.51.0",
+      "uvloop": "0.22.1",
+      "watchfiles": "1.2.0",
+      "websockets": "15.0.1",
+      "wheel": "0.46.3",
+      "xxhash": "3.8.1",
+      "zstandard": "0.25.0"
+    }
+  },
+  "schema_version": "talos.B3-local-provisioning-audit.v1",
+  "source_candidate_manifest_sha256": "6954cc1c8b55d57d2b223acee027d0dd06e82aaa94317ae5a2a467be2b8d0180",
+  "static_checks": {
+    "candidate_manifest_sha256": "6954cc1c8b55d57d2b223acee027d0dd06e82aaa94317ae5a2a467be2b8d0180",
+    "checks": {
+      "committed_verify_environment": {
+        "details": {
+          "certifi": "2026.6.17",
+          "charset-normalizer": "3.4.9",
+          "filelock": "4.2.12",
+          "fsspec": "2026.9.0",
+          "hf-xet": "1.8.0",
+          "huggingface-hub": "0.36.2",
+          "idna": "3.18",
+          "jinja2": "3.1.6",
+          "markupsafe": "3.0.4",
+          "mlx": "0.26.2",
+          "mlx-lm": "0.26.2",
+          "numpy": "2.3.2",
+          "packaging": "26.2",
+          "protobuf": "7.36.2",
+          "pyyaml": "6.0.3",
+          "regex": "2026.11.19",
+          "requests": "2.34.2",
+          "safetensors": "0.8.0",
+          "tokenizers": "0.21.4",
+          "tqdm": "4.70.1",
+          "transformers": "4.53.3",
+          "typing-extensions": "4.16.0",
+          "urllib3": "2.7.0"
+        },
+        "elapsed_seconds": 0.013216291001299396,
+        "status": "PASS"
+      },
+      "committed_verify_snapshot": {
+        "details": {
+          "added_tokens.json": {
+            "sha256": "c0284b582e14987fbd3d5a2cb2bd139084371ed9acbae488829a1c900833c680",
+            "size_bytes": 707
+          },
+          "chat_template.jinja": {
+            "sha256": "40c21f34cf67d8c760ef72f8ad3ae5afad514299d4b06e91dd9a8d705af7b541",
+            "size_bytes": 4040
+          },
+          "config.json": {
+            "sha256": "574349e5a343236546fda55e4744a76e181f534182d7dc60ff1bad7e7a502849",
+            "size_bytes": 938
+          },
+          "generation_config.json": {
+            "sha256": "835fffe355c9438e7a25be099b3fccaa98350b83451f9fd2d99512e74f1ade48",
+            "size_bytes": 238
+          },
+          "merges.txt": {
+            "sha256": "8831e4f1a044471340f7c0a83d7bd71306a5b867e95fd870f74d0c5308a904d5",
+            "size_bytes": 1671853
+          },
+          "model.safetensors": {
+            "sha256": "2a73c6c248601ab904e035548abd8e6abb65ea27dcb5f342fb0a8910eb44173f",
+            "size_bytes": 2263022417
+          },
+          "model.safetensors.index.json": {
+            "sha256": "388d811b8b7c2608dd04cce1bcb04a8bf715d19b42790894e6d3427ff429a777",
+            "size_bytes": 63964
+          },
+          "special_tokens_map.json": {
+            "sha256": "76862e765266b85aa9459767e33cbaf13970f327a0e88d1c65846c2ddd3a1ecd",
+            "size_bytes": 613
+          },
+          "tokenizer.json": {
+            "sha256": "aeb13307a71acd8fe81861d94ad54ab689df773318809eed3cbe794b4492dae4",
+            "size_bytes": 11422654
+          },
+          "tokenizer_config.json": {
+            "sha256": "4397cc477eb6d79715ccd2000accd6b3531928f30029665832fa1b255f24d2b9",
+            "size_bytes": 5440
+          },
+          "vocab.json": {
+            "sha256": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910",
+            "size_bytes": 2776833
+          }
+        },
+        "elapsed_seconds": 2.6209193329996197,
+        "status": "PASS"
+      },
+      "local_tokenizer_template_and_protocol_mocks": {
+        "details": {
+          "effective_template_sha256": "40c21f34cf67d8c760ef72f8ad3ae5afad514299d4b06e91dd9a8d705af7b541",
+          "mock_generation_tokens_1_is_not_measured_model_usage": true,
+          "output_tokens_generated": 0,
+          "overflow_rejected": true,
+          "probes": [
+            {
+              "actual_tool_executed": false,
+              "continuation_prompt_tokens": 561,
+              "domain": "it-helpdesk",
+              "initial_prompt_tokens": 515,
+              "tool_call_parse": "PASS_HAND_WRITTEN_MOCK_ONLY",
+              "tools": 4
+            },
+            {
+              "actual_tool_executed": false,
+              "continuation_prompt_tokens": 557,
+              "domain": "document-management",
+              "initial_prompt_tokens": 512,
+              "tool_call_parse": "PASS_HAND_WRITTEN_MOCK_ONLY",
+              "tools": 4
+            }
+          ],
+          "tokenizer_class": "Qwen2TokenizerFast",
+          "vocab_size": 151643
+        },
+        "elapsed_seconds": 0.1520082920033019,
+        "status": "PASS"
+      },
+      "missing_authority_fails_closed": {
+        "details": [
+          {
+            "opt_in": false,
+            "reason": "explicit DEV inference opt-in absent",
+            "status": "DENIED"
+          },
+          {
+            "opt_in": true,
+            "reason": "genuinely supplied authority trust root absent",
+            "status": "DENIED"
+          }
+        ],
+        "elapsed_seconds": 9.250004950445145e-06,
+        "status": "PASS"
+      },
+      "mlx_import_and_metal_device": {
+        "details": {
+          "device_info": {
+            "architecture": "applegpu_g16g",
+            "device_name": "Apple M4",
+            "max_buffer_length": 9534832640,
+            "max_recommended_working_set_size": 12713115648,
+            "memory_size": 17179869184,
+            "resource_limit": 499000
+          },
+          "metal_available": true,
+          "mlx": "0.26.2",
+          "mlx_lm": "0.26.2",
+          "no_array_operations_requested_by_probe": true,
+          "no_model_loaded": true
+        },
+        "elapsed_seconds": 0.9486684579969733,
+        "status": "PASS"
+      },
+      "safetensors_header_and_index_only": {
+        "details": {
+          "data_offsets_cover_payload": true,
+          "dtype_counts": {
+            "BF16": 651,
+            "U32": 253
+          },
+          "header_bytes": 102217,
+          "index_matches_header": true,
+          "model_type": "qwen3",
+          "numerical_weight_validity": "NOT_TESTED",
+          "quantization": {
+            "bits": 4,
+            "group_size": 64
+          },
+          "tensor_count": 904,
+          "tensor_payload_loaded": false
+        },
+        "elapsed_seconds": 0.0011815000034403056,
+        "status": "PASS"
+      }
+    },
+    "inference_executed": false,
+    "interpreter_sha256": "406d73d07e33e164d986326fde00b85c2b8f4ed2c33278142c8431588fe2df14",
+    "model_constructed": false,
+    "operational_status": "NO-GO",
+    "runtime_lock_sha256": "fbb8b6d7f1e6bc880d23ff7fb5737c0a7c47939009e05c462d28fc3be7c9f029",
+    "schema_version": "talos.local-B2-static-verification.v1",
+    "static_checks_passed": true,
+    "weights_loaded": false
+  }
+}
