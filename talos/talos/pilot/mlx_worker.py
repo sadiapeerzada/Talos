@@ -23,17 +23,28 @@ def prepare_prompt(tokenizer,request):
     return prompt
 
 
+def prompt_identity(tokenizer,tokens):
+    from talos.corpus.models import content_hash
+    rendered=tokenizer.decode(tokens)
+    if not isinstance(rendered,str):raise ValueError('rendered prompt unavailable')
+    return {'prompt_token_ids':list(tokens),'prompt_token_ids_sha256':content_hash(tokens),
+            'rendered_prompt':rendered,'rendered_prompt_sha256':content_hash(rendered)}
+
+
 def main():
     socket.socket.connect=deny;socket.socket.connect_ex=deny;socket.getaddrinfo=deny;sys.addaudithook(audit)
     from talos.pilot.contracts import parse_plan,parse_scope
     from talos.pilot.authority import ApprovalGate
+    from talos.pilot.compatibility import CompatibilityPlan,CompatibilityGate
     from talos.pilot.mlx_backend import verify_authority
     from talos.pilot.mlx_assets import verify_snapshot,verify_environment
     from talos.pilot.mlx_spec import CHECKPOINT,candidate
     from talos.pilot.mlx_protocol import collect
     payload=json.loads(sys.stdin.read(1000000));plan=parse_plan(payload['plan']);scope=parse_scope(payload['scope'])
-    gate=ApprovalGate(registry_path=Path(payload['registry_path']),registry_sha256=payload['registry_sha256'],
-        approval_paths=tuple(Path(p) for p in payload['approval_paths']),evidence_paths={k:Path(p) for k,p in payload['evidence_paths'].items()})
+    gate_type=CompatibilityGate if type(plan) is CompatibilityPlan else ApprovalGate
+    options={'enabled':payload.get('compatibility_policy_enabled',False)} if gate_type is CompatibilityGate else {}
+    gate=gate_type(registry_path=Path(payload['registry_path']),registry_sha256=payload['registry_sha256'],
+        approval_paths=tuple(Path(p) for p in payload['approval_paths']),evidence_paths={k:Path(p) for k,p in payload['evidence_paths'].items()},**options)
     if payload['owner_worker_pid']!=os.getppid():raise PermissionError('request is not owned by approved coordinator')
     # No MLX import or weight load precedes both cryptographic checks and artifact verification.
     verify_authority(plan,scope,gate,payload.get('opt_in',False),Path(sys.executable),owner_pid=os.getppid())
@@ -50,9 +61,10 @@ def main():
         if not isinstance(template,str) or hashlib.sha256(template.encode()).hexdigest()!=candidate()['checkpoint_files']['chat_template.jinja']['sha256']:
             raise PermissionError('runtime template differs from pinned metadata')
         prompt=prepare_prompt(tokenizer,payload['request'])
+        exact_prompt=prompt_identity(tokenizer,prompt)
         # No prompt cache/draft/adapters or cross-request model state is shared.
         completion=collect(stream_generate(model,tokenizer,prompt=prompt,max_tokens=512,sampler=make_sampler(temp=0)),len(prompt))
-    print(json.dumps({'completion':completion.model_dump(mode='json'),'environment':{'dependency_versions':versions,'verified_assets':assets,'candidate_manifest_sha256':plan.model.candidate_manifest_sha256,'MLX_LM':'0.26.2','model_role':'defender_target_agent_not_attacker'}}))
+    print(json.dumps({'completion':completion.model_dump(mode='json'),'environment':{'dependency_versions':versions,'verified_assets':assets,'candidate_manifest_sha256':plan.model.candidate_manifest_sha256,'MLX_LM':'0.26.2','model_role':'defender_target_agent_not_attacker','exact_prompt':exact_prompt}}))
 
 
 if __name__=='__main__':main()

@@ -166,8 +166,10 @@ def test_packet_source_identity_matches_reviewed_adapter():
     from .pilot_helpers import ROOT
     from talos.pilot.backend import source_hash,target_source_hash
     packet=json.loads((ROOT/'docs/experimental/pr09b1_decision_packet.json').read_text())
-    # B1 is historical custody evidence; B3 has its own current source binding.
+    # B1/B3 are historical custody evidence; the new policy has its own binding.
     assert packet['adapter_source_sha256']=='3b6ab20f18b719abbd0dc9adc604ef271ffd0e5921ec64207e87f97a7c0e4ab3'
-    current=json.loads((ROOT/'docs/experimental/pr09b3_authorization_request.json').read_text())
+    historical=json.loads((ROOT/'docs/experimental/pr09b3_authorization_request.json').read_text())
+    assert historical['adapter_source_sha256']=='629420e7ebaf5de7f42e42851275289bc29971b623559f22c2139c4e84fa40c1'
+    current=json.loads((ROOT/'docs/experimental/local_benign_policy_readiness.json').read_text())
     assert current['adapter_source_sha256']==source_hash()
     assert packet['target_policy_source_sha256']==current['target_policy_source_sha256']==target_source_hash()

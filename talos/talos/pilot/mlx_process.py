@@ -25,20 +25,40 @@ class OwnedRequest:
                 except ProcessLookupError:pass
                 p.wait(timeout=5)
 
-    def run(self,command,payload,timeout_ms):
+    def run(self,command,payload,timeout_ms, *, sandbox_profile=None,supervisor=None):
         started=time.monotonic()
         if self.cancelled or self.process is not None:raise PermissionError('owned request cannot be reused')
         encoded=json.dumps(payload,allow_nan=False).encode()
         if len(encoded)>1000000:raise ValueError('owned request payload exceeds worker input ceiling')
         with tempfile.TemporaryDirectory(prefix='talos-mlx-request-') as directory:
             env=offline_environment();env['TMPDIR']=directory
+            if sandbox_profile is not None:
+                import platform
+                if platform.system()!='Darwin' or not Path('/usr/bin/sandbox-exec').is_file():raise PermissionError('reviewed macOS containment launcher unavailable')
+                profile=Path(sandbox_profile)
+                if profile.is_symlink() or not profile.is_file():raise PermissionError('real regular containment profile required')
+                command=['/usr/bin/sandbox-exec','-D','SCRATCH='+str(Path(directory).resolve()),'-f',str(profile.resolve()),*command]
             input_path=Path(directory)/'request.json';input_path.write_bytes(encoded)
             with input_path.open('rb') as input_stream,self.lock:
                 if self.cancelled:raise PermissionError('cancelled before request spawn')
-                self.process=subprocess.Popen(command,stdin=input_stream,stdout=subprocess.PIPE,stderr=subprocess.PIPE,
-                    start_new_session=True,env=env,cwd=directory)
+                self.process=subprocess.Popen(command,stdin=subprocess.PIPE if supervisor else input_stream,stdout=subprocess.PIPE,stderr=subprocess.PIPE,
+                    start_new_session=True,env=env,cwd=directory,close_fds=True)
             streams={};deadline=started+timeout_ms/1000
             try:
+                if supervisor:
+                    # The real worker reads its complete stdin before model loading.
+                    # It cannot receive payload until the parent supervisor owns it.
+                    supervisor.register(self,max(1,int((deadline-time.monotonic())*1000)))
+                    os.set_blocking(self.process.stdin.fileno(),False);pending=memoryview(encoded)
+                    with selectors.DefaultSelector() as writer:
+                        writer.register(self.process.stdin,selectors.EVENT_WRITE)
+                        while pending:
+                            remaining=deadline-time.monotonic()
+                            if remaining<=0 or self.cancelled:raise subprocess.TimeoutExpired(command,timeout_ms/1000)
+                            if writer.select(min(remaining,0.05)):
+                                try:pending=pending[os.write(self.process.stdin.fileno(),pending):]
+                                except BlockingIOError:pass
+                    self.process.stdin.close()
                 # Drain both streams incrementally. communicate() buffered unlimited
                 # stderr/stdout until timeout; each stream is now capped at 2 MB.
                 with selectors.DefaultSelector() as selector:
@@ -70,3 +90,4 @@ class OwnedRequest:
                 self.diagnostics={name:{'bytes_retained':len(value),'sha256':hashlib.sha256(value).hexdigest()} for name,value in streams.items()}
                 self.diagnostics['stderr_text']=bytes(streams.get('stderr',b'')).decode('utf-8',errors='replace')
                 for stream in (self.process.stdout,self.process.stderr):stream.close()
+                if self.process.stdin is not None and not self.process.stdin.closed:self.process.stdin.close()

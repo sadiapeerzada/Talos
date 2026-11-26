@@ -30,7 +30,7 @@ jobs:
         run: |
           python -m talos.pilot readiness > b1-readiness.json
           python -m talos.pilot schema > b1-schemas.json
-          python -m pytest talos/tests/test_pilot_protocol.py talos/tests/test_pilot_authority.py talos/tests/test_pilot_delivery.py talos/tests/test_mlx_candidate.py talos/tests/test_benign_compatibility.py -v --junitxml=b1-tests.xml
+          python -m pytest talos/tests/test_pilot_protocol.py talos/tests/test_pilot_authority.py talos/tests/test_pilot_delivery.py talos/tests/test_mlx_candidate.py talos/tests/test_benign_compatibility.py talos/tests/test_compatibility_policy.py -v --junitxml=b1-tests.xml
       - uses: actions/upload-artifact@v4
         if: always()
         with:
