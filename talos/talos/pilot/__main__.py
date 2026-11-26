@@ -1,6 +1,7 @@
 """Readiness/schema only; deliberately no pilot/run/inference command."""
 import argparse,json
-from talos.pilot import ModelPlan,Scope,BenignPlan,BenignScope
+from talos.pilot import ModelPlan,Scope,BenignPlan,BenignScope,CompatibilityPlan,CompatibilityScope
+from talos.pilot.compatibility import CompatibilityApproval,CompatibilityRegistry
 
 
 def readiness():
@@ -14,7 +15,9 @@ def readiness():
 def main():
     p=argparse.ArgumentParser();p.add_argument('command',choices=('readiness','schema'));a=p.parse_args()
     print(json.dumps(readiness() if a.command=='readiness' else {'plan':ModelPlan.model_json_schema(),'approval_scope':Scope.model_json_schema(),
-        'benign_plan':BenignPlan.model_json_schema(),'benign_approval_scope':BenignScope.model_json_schema()},sort_keys=True,indent=2))
+        'benign_plan':BenignPlan.model_json_schema(),'benign_approval_scope':BenignScope.model_json_schema(),
+        'compatibility_plan':CompatibilityPlan.model_json_schema(),'compatibility_scope':CompatibilityScope.model_json_schema(),
+        'compatibility_registry':CompatibilityRegistry.model_json_schema(),'compatibility_approval':CompatibilityApproval.model_json_schema()},sort_keys=True,indent=2))
 
 
 if __name__=='__main__':main()

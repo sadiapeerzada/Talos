@@ -4,10 +4,12 @@ from talos.pilot.mlx_spec import ProposedMLXPilot
 
 
 class MLXBatchLedger:
+    def _caps(self):return ProposedMLXPilot()
+
     def __init__(self,batch_id, *, clock=time.monotonic,state_path=None):
         if not batch_id:raise ValueError('explicit batch identity required')
         self.batch_id=batch_id;self.clock=clock;self.started=clock();self.episodes={};self.closed=False;self.stop_reason=None
-        self.caps=ProposedMLXPilot();self.recorder=None;self.initial_sha256=None
+        self.caps=self._caps();self.recorder=None;self.initial_sha256=None
         if state_path is not None:
             from talos.research.recorder import Recorder
             from talos.corpus.models import content_hash

@@ -1,0 +1,142 @@
+{
+  "A1_A4_campaign": "NO-GO",
+  "DEV_injection": "NO-GO",
+  "OS": "macOS 26.5.2 / 25F84, Apple M4",
+  "basis": "local_operator_non_model_measurements_NOT_authorization_or_independent_review",
+  "canonical_profile_sha256": "2ac1d101979cbf7a995b8fda3045f824f4dcd6ac039194ee2de46d1314b9c883",
+  "earlier_profile_failures": {
+    "complete_logs_preserved_locally": true,
+    "root_anchor_cause_observed_in_kernel_log": true,
+    "startup_exit_134": true
+  },
+  "inference_requests": 0,
+  "kernel_checks": {
+    "Metal": {
+      "available": true,
+      "device": {
+        "architecture": "applegpu_g16g",
+        "device_name": "Apple M4",
+        "max_buffer_length": 9534832640,
+        "max_recommended_working_set_size": 12713115648,
+        "memory_size": 17179869184,
+        "resource_limit": 499000
+      },
+      "result": [
+        2,
+        3,
+        4
+      ]
+    },
+    "allowed_read": true,
+    "allowed_scratch_write": true,
+    "fork": {
+      "denied": true,
+      "errno": 1
+    },
+    "inference_requests": 0,
+    "ipv4_tcp": {
+      "denied": true,
+      "errno": 1
+    },
+    "ipv4_udp": {
+      "denied": true,
+      "errno": 1
+    },
+    "ipv6_tcp": {
+      "denied": true,
+      "errno": 1
+    },
+    "ipv6_udp": {
+      "denied": true,
+      "errno": 1
+    },
+    "model_loaded": false,
+    "outside_write": {
+      "denied": true,
+      "errno": 1
+    },
+    "posix_spawn": {
+      "denied": true,
+      "errno": 1
+    },
+    "private": {
+      "denied": true,
+      "errno": 1
+    },
+    "private_via_symlink": {
+      "denied": true,
+      "errno": 1
+    },
+    "scope": "NON_MODEL_OS_AND_METAL_PROBES",
+    "subprocess": {
+      "denied": true,
+      "errno": 1
+    }
+  },
+  "model_loaded": false,
+  "not_verified": [
+    "genuine authenticated owner/delegation records",
+    "actual scope-bound run approval",
+    "independent acceptance of deployment/control reports",
+    "simultaneous supervisor and coordinator loss",
+    "hostile administrator/kernel/driver failure",
+    "real model execution inside this new deployment"
+  ],
+  "operational_benign": "NO-GO",
+  "profile_bytes_reproduced_by_current_generator": true,
+  "report_client_date": "2026-11-26",
+  "schema_version": "talos.benign-policy-non-model-verification.v1",
+  "source_identity": {
+    "compat_sandbox.py": "e253c7d086eef0f58e49faf1b7ac89aa7a698eb2b88c66be631ff36d5e281e87",
+    "compat_supervisor.py": "ad746c229dc367271487828ffe717f14378917c38d46a303124238a8e13206b1"
+  },
+  "supervision_cases": {
+    "coordinator_crash": {
+      "case": "coordinator_crash",
+      "coordinator_reaped": true,
+      "coordinator_result": null,
+      "elapsed_s": 0.5744257089972962,
+      "worker_no_longer_running": true
+    },
+    "normal": {
+      "case": "normal",
+      "coordinator_reaped": true,
+      "coordinator_result": {
+        "Metal_result": [
+          2,
+          3,
+          4
+        ],
+        "inference_requests": 0,
+        "non_model": true
+      },
+      "elapsed_s": 0.4631900829990627,
+      "worker_no_longer_running": true
+    },
+    "request_timeout": {
+      "case": "request_timeout",
+      "coordinator_reaped": true,
+      "coordinator_result": {
+        "failure": "RequestCancelled"
+      },
+      "elapsed_s": 0.41006929200011655,
+      "worker_no_longer_running": true
+    },
+    "supervisor_crash": {
+      "case": "supervisor_crash",
+      "coordinator_no_longer_running": true,
+      "coordinator_result": {
+        "failure": "RequestCancelled"
+      },
+      "supervisor_reaped": true,
+      "worker_no_longer_running": true
+    },
+    "supervisor_deadline": {
+      "case": "supervisor_deadline",
+      "coordinator_reaped": true,
+      "coordinator_result": null,
+      "elapsed_s": 0.6122303749980347,
+      "worker_no_longer_running": true
+    }
+  }
+}

@@ -10,6 +10,9 @@ from talos.research.recorder import Recorder
 
 def execute(plan:ModelPlan,backend,archive:Path):
     plan=parse_plan(plan)
+    from talos.pilot.compatibility import CompatibilityPlan
+    if type(plan) is CompatibilityPlan and str(Path(archive).resolve())!=plan.archive_path:
+        raise PermissionError('archive differs from exact approved compatibility scope')
     if type(backend) not in (LocalModelBackend,ProtocolReplayBackend,MLXModelBackend,MLXReplayBackend):raise TypeError('explicit known backend required')
     before=backend.budget_for(plan.limits).snapshot()
     with Recorder(archive,create=True) as recorder:

@@ -156,11 +156,17 @@ class BenignScope(Scope):
 
 def parse_plan(value):
     raw=value.model_dump() if hasattr(value,'model_dump') else value
+    if raw.get('schema_version')=='talos.local-benign-compatibility-plan.v1':
+        from talos.pilot.compatibility import CompatibilityPlan
+        return CompatibilityPlan.model_validate(raw)
     cls=BenignPlan if raw.get('schema_version')=='talos.dev-benign-conversation.v1' else ModelPlan
     return cls.model_validate(raw)
 
 
 def parse_scope(value):
     raw=value.model_dump() if hasattr(value,'model_dump') else value
+    if raw.get('schema_version')=='talos.local-benign-compatibility-scope.v1':
+        from talos.pilot.compatibility import CompatibilityScope
+        return CompatibilityScope.model_validate(raw)
     cls=BenignScope if raw.get('schema_version')=='talos.DEV-benign-approval-scope.v1' else Scope
     return cls.model_validate(raw)

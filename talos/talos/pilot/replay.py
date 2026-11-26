@@ -34,7 +34,13 @@ def replay(path:Path, *, expected_seal:str):
         if receipt['basis']=='local_provider_response':
             from talos.pilot.contracts import Scope
             scope=parse_scope(manifest['approval_scope']);proof=receipt.get('authorization')
-            if not proof or proof.get('scope_sha256')!=scope.digest() or len(proof.get('approval_sha256',[]))!=7:
+            from talos.pilot.compatibility import CompatibilityPlan,CompatibilityScope,POLICY,RIGHTS
+            compatibility=type(plan) is CompatibilityPlan
+            valid=(proof and proof.get('scope_sha256')==scope.digest() and
+                ((type(scope) is CompatibilityScope and proof.get('authorization_policy')==POLICY and proof.get('status')=='VERIFIED_SUPPLIED_COMPATIBILITY_RECORDS'
+                  and set(proof.get('responsibilities',[]))==set(RIGHTS) and len(proof.get('approval_sha256',[]))>=1
+                  and proof.get('independent_validation') is False) if compatibility else len(proof.get('approval_sha256',[]))==7))
+            if not valid:
                 raise IntegrityError('actual provider request lacks recorded authority verification references')
         if receipt['step']!=step or receipt['request_sha256']!=content_hash(receipt['request']):raise IntegrityError('request identity mismatch')
         if receipt['response'] is None:
@@ -50,6 +56,15 @@ def replay(path:Path, *, expected_seal:str):
             from talos.pilot.mlx_protocol import NativeCompletion,normalize
             request_id='mlx-request-'+hashlib.sha256((plan.digest()+':'+str(step)+':'+json.dumps(receipt['request'],sort_keys=True)).encode()).hexdigest()
             native=NativeCompletion.model_validate(receipt.get('native_MLX_completion'))
+            from talos.pilot.compatibility import CompatibilityPlan
+            if live and type(plan) is CompatibilityPlan:
+                prompt=receipt.get('native_MLX_environment',{}).get('exact_prompt',{})
+                ids=prompt.get('prompt_token_ids')
+                if (not isinstance(ids,list) or any(type(t) is not int for t in ids) or len(ids)!=native.prompt_tokens
+                    or prompt.get('prompt_token_ids_sha256')!=content_hash(ids)
+                    or not isinstance(prompt.get('rendered_prompt'),str)
+                    or prompt.get('rendered_prompt_sha256')!=content_hash(prompt['rendered_prompt'])):
+                    raise IntegrityError('exact compatibility model-input record absent/changed')
             expected_wire=normalize(native,plan.model,request_id=request_id,tool_schemas={t.name:t.arguments for t in domain.tools},seen_ids=seen)
             if (expected_wire!=receipt['response'] or receipt.get('candidate_manifest_sha256')!=plan.model.candidate_manifest_sha256
                 or receipt.get('call_ID_origin')!='adapter_correlation_ID_not_model_generated_identity' or receipt.get('paid_API_spending_inr')!=0):

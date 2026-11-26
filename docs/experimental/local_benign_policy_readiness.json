@@ -1,0 +1,33 @@
+{
+  "A1_A4_campaign": "NO-GO",
+  "DEV_injection": "NO-GO",
+  "actual_authorities": null,
+  "actual_run_approvals": null,
+  "adapter_source_sha256": "1c3d3f612d89e9797bcb6bade0c678948f05246e95b357175d1003e338dbc938",
+  "approved_deployment_evidence": null,
+  "authenticated_compatibility_root": null,
+  "authorization_policy": "talos.local-benign-dev-authorization.v1",
+  "candidate_manifest_sha256": "6954cc1c8b55d57d2b223acee027d0dd06e82aaa94317ae5a2a467be2b8d0180",
+  "candidate_revision": "50d427756c6b1b2fe0c0a10f67fbda1fc8e82c1b",
+  "custody_basis": "operator_owned_not_independently_validated",
+  "enabled_by_default": false,
+  "implementation_approval_only": true,
+  "inference_requests_in_this_task": 0,
+  "model_loaded_in_this_task": false,
+  "no_authority_keys_or_signatures_generated": true,
+  "operational_benign_execution": "NO-GO",
+  "required_genuine_evidence_categories": [
+    "ownership_delegation",
+    "execution_custody",
+    "budget",
+    "containment"
+  ],
+  "required_genuine_responsibilities": [
+    "synthetic_target_owner_or_delegate",
+    "compute_budget_authority",
+    "operator_evidence_custodian"
+  ],
+  "schema_version": "talos.local-benign-policy-readiness.v1",
+  "seven_role_gate_sha256": "42e78caa98f1d6d6132952482cf4c7402ac4ccf288d1a13d0d2bfb3e9e618275",
+  "target_policy_source_sha256": "ba21a3b0a4ed402a29f842dc05f3cb8b15566aa2b04aa86d73f8b2c8750ea4ee"
+}

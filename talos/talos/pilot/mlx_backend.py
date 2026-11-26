@@ -15,6 +15,11 @@ from talos.targets.documents import DocumentDomain
 
 
 def verify_authority(plan,scope,gate,opt_in,python_path, *, owner_pid=None,batch=None):
+    from talos.pilot.compatibility import CompatibilityPlan,CompatibilityScope,CompatibilityGate,verify_compatibility_authority
+    if type(plan) is CompatibilityPlan:
+        return verify_compatibility_authority(plan,scope,gate,opt_in,python_path,owner_pid=owner_pid,batch=batch)
+    if type(gate) is not ApprovalGate or isinstance(scope,CompatibilityScope):
+        raise PermissionError('seven-role execution requires its original gate/scope; no compatibility fallback')
     if not isinstance(plan.model,MLXModel):raise PermissionError('exact MLX model configuration required')
     proof=gate.require(scope,opt_in=opt_in)
     if scope.plan_sha256!=plan.digest() or scope.adapter_source_sha256!=source_hash() or scope.target_policy_source_sha256!=target_source_hash():
@@ -85,7 +90,9 @@ class MLXReplayBackend(ProtocolReplayBackend):
 
     def assert_plan(self,plan):
         super().assert_plan(plan)
-        if type(self.batch) is not MLXBatchLedger or self.batch.batch_id!=plan.model.batch_id:raise PermissionError('single shared candidate batch ledger required')
+        from talos.pilot.compatibility import CompatibilityPlan,CompatibilityLedger
+        expected=CompatibilityLedger if type(plan) is CompatibilityPlan else MLXBatchLedger
+        if type(self.batch) is not expected or self.batch.batch_id!=plan.model.batch_id:raise PermissionError('exact policy-specific batch ledger required')
         self.batch.begin(self.episode_id)
 
     def guard(self):
@@ -149,6 +156,9 @@ class MLXModelBackend(MLXReplayBackend):
     def _native(self,body,step):
         self.guard();remaining=min(self.plan.model.request_timeout_ms,self.batch.remaining_ms(),
             min(self.plan.hard_timeout_ms,self.plan.limits.amounts['elapsed_ms']-self.elapsed_before)-int((time.monotonic()-self.started)*1000))
+        from talos.pilot.compatibility import CompatibilityPlan
+        compatibility=type(self.plan) is CompatibilityPlan
+        if compatibility:remaining-=self.plan.cleanup_reserve_ms
         if remaining<=0:raise TimeoutError('no MLX time remaining')
         self.active=OwnedRequest()
         payload={'plan':self.plan.model_dump(mode='json'),'scope':self.scope.model_dump(mode='json'),'request':body,
@@ -156,13 +166,21 @@ class MLXModelBackend(MLXReplayBackend):
             'approval_paths':[str(p) for p in self.gate.approval_paths],
             'evidence_paths':{k:str(p) for k,p in self.gate.evidence_paths.items()},'opt_in':self.opt_in,
             'owner_worker_pid':os.getpid()}
-        result=self.active.run([str(self.python_path),'-I',str(Path(__file__).with_name('mlx_worker.py').resolve())],payload,remaining)
+        if compatibility:
+            payload['compatibility_policy_enabled']=self.gate.enabled
+            containment=loads(Path(self.gate.evidence_paths['containment']).read_text())
+            from talos.pilot.compat_supervisor import CompatibilitySupervisorClient
+            if not hasattr(self,'compat_supervisor'):self.compat_supervisor=CompatibilitySupervisorClient(containment['supervisor_pid'])
+            result=self.active.run([str(self.python_path),'-I',str(Path(__file__).with_name('mlx_worker.py').resolve())],payload,remaining,
+                sandbox_profile=Path(containment['sandbox_profile_path']),supervisor=self.compat_supervisor)
+        else:result=self.active.run([str(self.python_path),'-I',str(Path(__file__).with_name('mlx_worker.py').resolve())],payload,remaining)
         self.receipts[-1]['native_MLX_environment']=result['environment']
         return result['completion']
 
     def close(self):
         self.closed=True
         if self.active is not None and self.active.process is not None and self.active.process.poll() is None:self.active.cancel()
+        if hasattr(self,'compat_supervisor'):self.compat_supervisor.close()
         return {'MLX_request_reaped':self.active is None or self.active.process is None or self.active.process.poll() is not None,'hardware_cost':None,
             'private_worker_diagnostics':self.active.diagnostics if self.active else None,
             'OS_containment_verified_by_this_code':False}
